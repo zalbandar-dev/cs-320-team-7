@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Navbar from "@/app/components/Navbar";
+import Sidebar from "@/app/components/Sidebar";
 import SpotGrid from "@/app/components/SpotGrid";
 import { ParkingSpot } from "@/app/lib/types";
 
@@ -37,51 +38,56 @@ export default function Home() {
   };
 
   return (
-    <div style={{ minHeight: "100vh" }}>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#f3f4f6" }}>
       <Navbar onSearch={handleSearch} />
 
-      {/* Active filter chip */}
-      {activeZip && (
-        <div
-          style={{
-            maxWidth: "1400px",
-            margin: "0 auto",
-            padding: "16px 24px 0",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <span
-            style={{
-              background: "var(--gray-100)",
-              padding: "6px 14px",
-              borderRadius: "20px",
-              fontSize: "14px",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
-          >
-            Zip: {activeZip}
-            <button
-              onClick={() => handleSearch("")}
+      <div style={{ display: "flex", flex: 1 }}>
+        <Sidebar />
+
+        <main style={{ flex: 1, minWidth: 0 }}>
+          {/* Active filter chip */}
+          {activeZip && (
+            <div
               style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "16px",
-                lineHeight: 1,
-                color: "var(--gray-500)",
+                padding: "16px 24px 0",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
               }}
             >
-              ✕
-            </button>
-          </span>
-        </div>
-      )}
+              <span
+                style={{
+                  background: "var(--gray-100)",
+                  padding: "6px 14px",
+                  borderRadius: "20px",
+                  fontSize: "14px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                Zip: {activeZip}
+                <button
+                  type="button"
+                  onClick={() => handleSearch("")}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "16px",
+                    lineHeight: 1,
+                    color: "var(--gray-500)",
+                  }}
+                >
+                  ✕
+                </button>
+              </span>
+            </div>
+          )}
 
-      <SpotGrid spots={spots} loading={loading} />
+          <SpotGrid spots={spots} loading={loading} />
+        </main>
+      </div>
     </div>
   );
 }
