@@ -67,6 +67,8 @@ export default function Navbar({ onSearch }: NavbarProps) {
             border: "none",
             outline: "none",
             fontSize: "14px",
+            color: "#2563eb",
+            background: "white",
           }}
         />
         <button
