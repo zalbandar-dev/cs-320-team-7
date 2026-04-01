@@ -1,93 +1,44 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 
-interface NavbarProps {
-  onSearch?: (zip: string) => void;
-}
-
-export default function Navbar({ onSearch }: NavbarProps) {
-  const [zipInput, setZipInput] = useState("");
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch?.(zipInput.trim());
-  };
-
+export default function Navbar() {
   return (
-    <nav
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        background: "white",
-        borderBottom: "1px solid var(--gray-200)",
-        padding: "16px 24px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: "16px",
-      }}
-    >
-      <Link
-        href="/"
-        style={{
-          fontSize: "24px",
-          fontWeight: 800,
-          color: "var(--primary)",
-          letterSpacing: "-0.5px",
-          flexShrink: 0,
-        }}
-      >
-        🅿️ ParkSpot
-      </Link>
+    <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md shadow-sm">
+      <div className="flex justify-between items-center px-8 h-20 w-full max-w-screen-2xl mx-auto">
+        {/* Left: brand + nav links */}
+        <div className="flex items-center gap-12">
+          <Link href="/" style={{ fontFamily: "Manrope, sans-serif" }}
+            className="text-2xl font-black text-blue-700 tracking-tighter no-underline">
+            Parkly
+          </Link>
+          <div className="hidden md:flex gap-8 font-semibold tracking-tight">
+            <Link href="/" className="text-slate-600 hover:text-blue-600 transition-colors duration-200 no-underline">
+              Find Parking
+            </Link>
+            <Link href="#" className="text-slate-600 hover:text-blue-600 transition-colors duration-200 no-underline">
+              List Your Space
+            </Link>
+          </div>
+        </div>
 
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          border: "1px solid var(--gray-300)",
-          borderRadius: "40px",
-          overflow: "hidden",
-          maxWidth: "420px",
-          width: "100%",
-          boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
-        }}
-      >
-        <input
-          type="text"
-          placeholder="Search by zip code..."
-          value={zipInput}
-          onChange={(e) => setZipInput(e.target.value)}
-          style={{
-            flex: 1,
-            padding: "10px 20px",
-            border: "none",
-            outline: "none",
-            fontSize: "14px",
-            color: "#2563eb",
-            background: "white",
-          }}
-        />
-        <button
-          type="submit"
-          style={{
-            background: "var(--primary)",
-            color: "white",
-            border: "none",
-            padding: "10px 18px",
-            cursor: "pointer",
-            fontSize: "14px",
-            fontWeight: 600,
-          }}
-        >
-          Search
-        </button>
-      </form>
-
-      <div style={{ width: "120px", flexShrink: 0 }} />
+        {/* Right: icons + avatar */}
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 text-slate-600">
+            <button type="button" className="p-2 hover:bg-slate-50 rounded-full transition-colors">
+              <span className="material-symbols-outlined">notifications</span>
+            </button>
+            <button type="button" className="p-2 hover:bg-slate-50 rounded-full transition-colors">
+              <span className="material-symbols-outlined">help_outline</span>
+            </button>
+          </div>
+          <Link href="/account">
+            <div className="h-10 w-10 rounded-full bg-blue-700 border-2 border-blue-600 ring-4 ring-blue-100 flex items-center justify-center text-white font-bold text-sm cursor-pointer select-none">
+              JS
+            </div>
+          </Link>
+        </div>
+      </div>
     </nav>
   );
 }
