@@ -1,11 +1,14 @@
+require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3001;
 
-const supabaseUrl = 'https://qgiqqbwodbcnbtzqjtwu.supabase.co';
-const supabaseKey = 'your-anon-key';
-const supabase = createClient(supabaseUrl, supabaseKey);
+app.use(cors({ origin: 'http://localhost:3000' }));
+app.use(express.json());
+
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 app.get('/api/boston-meters', async (req, res) => {
   // Updated URL with your specific fields
