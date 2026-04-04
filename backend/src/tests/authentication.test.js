@@ -67,7 +67,7 @@ const {
     storeUser,
     generateJWT,
     getUserInfo
-} = require('./authentication.js');
+} = require('../utils/authentication.js');
 
 describe('Auth System Unit Tests', () => {
 
