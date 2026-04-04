@@ -1,0 +1,7 @@
+#How to install dependencies:
+#
+# Install all dependencies (reads package.json):
+#   cd backend
+#   npm install
+#
+# Commit package.json and package-lock.json to GitHub so everyone gets the same versions.
