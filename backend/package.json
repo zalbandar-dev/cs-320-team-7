@@ -12,7 +12,7 @@
   "engines": {
     "node": ">=18"
   },
-"dependencies": {
+  "dependencies": {
     "@supabase/supabase-js": "^2.101.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
@@ -22,6 +22,7 @@
     "validator": "^13.15.35"
   },
   "devDependencies": {
-    "jest": "^30.3.0"
+    "jest": "^30.3.0",
+    "supertest": "^7.2.2"
   }
 }
