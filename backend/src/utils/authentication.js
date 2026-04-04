@@ -97,9 +97,6 @@ async function validateLogin(username, pwd) {
         return new status(false, "No user found with the provided username");
     }
 
-    console.log("DEBUG: Input PWD:", pwd);
-    console.log("DEBUG: DB Hash:", user ? user.password_hash : "MISSING");
-
     const isMatch = await bcrypt.compare(pwd.trim(), user.password_hash.trim());
 
     if (!isMatch) {
