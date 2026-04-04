@@ -6,6 +6,9 @@ import Navbar from "@/app/components/Navbar";
 import Sidebar from "@/app/components/Sidebar";
 import { ParkingSpot } from "@/app/lib/types";
 
+const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800&q=80";
+const DAILY_DISCOUNT_RATE = 0.5; // 15% discount for daily rate
+
 export default function ListingsPage() {
   const [spots, setSpots] = useState<ParkingSpot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,8 +22,13 @@ export default function ListingsPage() {
         ? `/api/listSpotsByZip?zip=${zipCode}`
         : `/api/listAvailableSpots`;
       const res = await fetch(url);
+
       const data = await res.json();
-      setSpots(Array.isArray(data) ? data : []);
+      const Data = data.data;
+      console.log("WGKLEJGLKJ");
+      console.log(Data);
+      setSpots(Array.isArray(Data) ? Data : []);
+      console.log(spots.length)
     } catch {
       setSpots([]);
     } finally {
@@ -40,6 +48,10 @@ export default function ListingsPage() {
     setZip("");
     setActiveZip("");
     fetchSpots();
+  };
+
+  const getPricePerDay = (pricePerHour: number) => {
+    return pricePerHour * 24 * DAILY_DISCOUNT_RATE;
   };
 
   return (
@@ -125,12 +137,12 @@ export default function ListingsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {spots.map((spot) => (
-                <Link key={spot.id} href={`/spots/${spot.id}`} className="no-underline block">
+                <Link key={spot.spot_id} href={`/spots/${spot.spot_id}`} className="no-underline block">
                   <div className="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow group flex flex-col">
                     <div className="relative h-48 overflow-hidden">
                       <img
-                        src={spot.image_url}
-                        alt={spot.title}
+                        src={PLACEHOLDER_IMAGE}
+                        alt={spot.spot_type}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute top-3 left-3 flex gap-2">
@@ -139,22 +151,23 @@ export default function ListingsPage() {
                         </span>
                       </div>
                       <div className="absolute bottom-3 right-3 bg-primary text-on-primary px-3 py-1 rounded-lg font-bold text-sm">
-                        ${spot.price_per_hour.toFixed(2)}<span className="text-[10px] opacity-80">/hr</span>
+                        ${spot.hourly_rate.toFixed(2)}<span className="text-[10px] opacity-80">/hr</span>
                       </div>
                     </div>
                     <div className="p-5 flex-1 flex flex-col">
                       <div className="flex justify-between items-start mb-1">
-                        <h3 className="font-bold text-base text-on-surface">{spot.city}, {spot.state}</h3>
+                        <h3 className="font-bold text-base text-on-surface">{spot.zip_code}</h3>
                         <span className="text-sm font-semibold text-on-surface-variant flex items-center gap-0.5">
-                          <span className="text-amber-400">★</span>{spot.rating}
+                          <span className="text-amber-400">★</span>
+                          {/* {spot.rating} */}
+                          4.5
                         </span>
                       </div>
-                      <p className="text-sm text-on-surface-variant">{spot.title}</p>
                       <p className="text-sm text-on-surface-variant">{spot.address}</p>
                       <p className="mt-3 text-sm">
-                        <span className="font-bold text-on-surface">${spot.price_per_hour.toFixed(2)}</span>
+                        <span className="font-bold text-on-surface">${spot.hourly_rate.toFixed(2)}</span>
                         <span className="text-on-surface-variant"> / hour · </span>
-                        <span className="font-bold text-on-surface">${spot.price_per_day.toFixed(2)}</span>
+                        <span className="font-bold text-on-surface">${getPricePerDay(spot.hourly_rate).toFixed(2)}</span>
                         <span className="text-on-surface-variant"> / day</span>
                       </p>
                     </div>
