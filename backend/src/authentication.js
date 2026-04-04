@@ -107,7 +107,7 @@ async function validateLogin(username, pwd) {
         return new status(false, "No user found with the provided username");
     }
 
-    const isMatch = await bcrypt.compare(pwd, user.pwd);
+    const isMatch = await bcrypt.compare(pwd, user.password_hash);
 
     if (!isMatch) {
         return new status(false, "Incorrect password");
@@ -119,7 +119,7 @@ async function validateLogin(username, pwd) {
 async function storeUser(userData) {
     const userDict = {
         username: userData.username,
-        pwd: await hashPassword(userData.pwd),
+        password_hash: await hashPassword(userData.pwd),
         email: userData.email,
         first_name: userData.firstName,
         last_name: userData.lastName,
@@ -156,7 +156,7 @@ async function getUserInfo(username) {
         .single();
 
     if (error || !user) return null;
-    return new userData(user.username, user.pwd, user.email, user.first_name, user.last_name, user.phone, user.role);
+    return new userData(user.username, user.password_hash, user.email, user.first_name, user.last_name, user.phone, user.role);
 }
 
 module.exports = {
