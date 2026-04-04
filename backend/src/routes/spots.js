@@ -49,7 +49,7 @@ router.get('/autocomplete', async (req, res) => {
         return res.status(400).json({ success: false, error: 'text is required' });
     }
 
-    // const url = https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(text)}&filter=countrycode:us&format=json&apiKey=${process.env.GEOAPIFY_KEY};
+    const url = 'https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(text)}&filter=countrycode:us&format=json&apiKey=${process.env.GEOAPIFY_KEY}';
 
     const response = await fetch(url);
     const data = await response.json();
