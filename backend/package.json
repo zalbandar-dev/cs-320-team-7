@@ -6,7 +6,8 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "test": "jest --testPathPatterns=src/tests"
   },
   "engines": {
     "node": ">=18"
@@ -16,5 +17,8 @@
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0"
   }
 }
