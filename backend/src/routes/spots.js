@@ -19,7 +19,7 @@ router.get('/allSpots', async (req, res) => {
 });
 
 // Search available parking spots by zip code
-router.get('/spots', async (req, res) => {
+router.get('/spotByZip', async (req, res) => {
     const { zip_code } = req.query;
 
     if (!zip_code) {
