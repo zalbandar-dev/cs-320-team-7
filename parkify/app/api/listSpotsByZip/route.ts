@@ -1,16 +1,25 @@
-import { NextRequest, NextResponse } from "next/server";
-import { parkingSpots } from "@/app/lib/fake-data";
+import { NextResponse, NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
-  const zip = request.nextUrl.searchParams.get("zip");
-  if (!zip) {
+  try {
+    const zip = request.nextUrl.searchParams.get("zip");
+
+    if (!zip) {
+      return NextResponse.json(
+        { error: "zip is required" },
+        { status: 400 }
+      );
+    }
+
+    const response = await fetch(
+      `http://localhost:3001/api/spotByZip?zip_code=${zip}`
+    );
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
     return NextResponse.json(
-      { error: "zip query parameter is required" },
-      { status: 400 }
+      { error: "Failed to fetch from backend" },
+      { status: 500 }
     );
   }
-  const results = parkingSpots.filter(
-    (s) => s.status === "available" && s.zip_code === zip
-  );
-  return NextResponse.json(results);
 }
