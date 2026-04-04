@@ -59,37 +59,27 @@ async function validateInputCredentials(userData) {
         return new status(false, "invalid phone number format");
     }
 
-    //Check whether username is taken
-    const { data: existingUser, error } = await supabase
-        .from('users')
-        .select('username')
-        .eq('username', userData.username)
-        .maybeSingle();
+    const { data: existingUsers, error } = await supabase
+    .from('users')
+    .select('username, email, phone')
+    .or(`username.eq.${userData.username},email.eq.${userData.email},phone.eq.${userData.phone}`);
 
-    if (existingUser) {
-        return new status(false, "username is already taken");
+    if (error) {
+        return new status(false, "Database connection error: " + error.message);
     }
 
-    //Check whether email is taken
-    const { data: existingEmail } = await supabase
-        .from('users')
-        .select('email')
-        .eq('email', userData.email)
-        .maybeSingle();
-
-    if (existingEmail) {
-        return new status(false, "email is already registered");
-    }
-
-    //Check whether phone number is taken
-    const { data: existingPhone } = await supabase
-        .from('users')
-        .select('phone')
-        .eq('phone', userData.phone)
-        .maybeSingle();
-
-    if (existingPhone) {
-        return new status(false, "phone number is already registered");
+    if (existingUsers && existingUsers.length > 0) {
+        for (const user of existingUsers) {
+            if (user.username === userData.username) {
+                return new status(false, "username is already taken");
+            }
+            if (user.email === userData.email) {
+                return new status(false, "email is already registered");
+            }
+            if (user.phone === userData.phone) {
+                return new status(false, "phone number is already registered");
+            }
+        }
     }
 
     return new status(true, "");
@@ -107,7 +97,10 @@ async function validateLogin(username, pwd) {
         return new status(false, "No user found with the provided username");
     }
 
-    const isMatch = await bcrypt.compare(pwd, user.password_hash);
+    console.log("DEBUG: Input PWD:", pwd);
+    console.log("DEBUG: DB Hash:", user ? user.password_hash : "MISSING");
+
+    const isMatch = await bcrypt.compare(pwd.trim(), user.password_hash.trim());
 
     if (!isMatch) {
         return new status(false, "Incorrect password");
@@ -142,7 +135,7 @@ async function generateJWT(userID) {
     const payload = {
         sub: userID,
         iat: Math.floor(Date.now() / 1000),
-        jti: crypto.randomUUID()
+        jti: crypto.randomBytes(16).toString('hex')
     };
 
     return jwt.sign(payload, secret, { expiresIn: '24h' });
