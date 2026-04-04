@@ -1,6 +1,23 @@
 const express = require('express');
 const router = express.Router();
 
+// Search all available parking spots 
+router.get('/allSpots', async (req, res) => {
+
+    const supabase = req.app.get('supabase');
+
+    const { data, error } = await supabase
+        .from('parking_spots')
+        .select('')
+        .eq('available', true);
+
+    if (error) {
+        return res.status(500).json({ success: false, error: error.message });
+    }
+
+    res.json({ success: true, count: data.length, data });
+});
+
 // Search available parking spots by zip code
 router.get('/spots', async (req, res) => {
     const { zip_code } = req.query;
@@ -13,7 +30,7 @@ router.get('/spots', async (req, res) => {
 
     const { data, error } = await supabase
         .from('parking_spots')
-        .select('*')
+        .select('')
         .eq('zip_code', zip_code)
         .eq('available', true);
 
@@ -32,12 +49,11 @@ router.get('/autocomplete', async (req, res) => {
         return res.status(400).json({ success: false, error: 'text is required' });
     }
 
-    const url = `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(text)}&filter=countrycode:us&format=json&apiKey=${process.env.GEOAPIFY_KEY}`;
+    // const url = https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(text)}&filter=countrycode:us&format=json&apiKey=${process.env.GEOAPIFY_KEY};
 
     const response = await fetch(url);
     const data = await response.json();
 
     res.json({ success: true, results: data.results });
 });
-
 module.exports = router;
