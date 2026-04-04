@@ -156,7 +156,7 @@ export default function ListingsPage() {
                     </div>
                     <div className="p-5 flex-1 flex flex-col">
                       <div className="flex justify-between items-start mb-1">
-                        {/* <h3 className="font-bold text-base text-on-surface">{spot.title}</h3> */}
+                        <h3 className="font-bold text-base text-on-surface">{spot.zip_code}</h3>
                         <span className="text-sm font-semibold text-on-surface-variant flex items-center gap-0.5">
                           <span className="text-amber-400">★</span>
                           {/* {spot.rating} */}
