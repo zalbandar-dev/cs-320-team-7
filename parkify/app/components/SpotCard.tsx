@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ParkingSpot } from "@/lib/types";
+import { ParkingSpot } from "@/app/lib/types";
 
 function StarRating({ rating }: { rating: number }) {
   return (
