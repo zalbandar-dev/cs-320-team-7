@@ -8,8 +8,7 @@ router.get('/allSpots', async (req, res) => {
 
     const { data, error } = await supabase
         .from('parking_spots')
-        .select('')
-        .eq('available', true);
+        .select('');
 
     if (error) {
         return res.status(500).json({ success: false, error: error.message });
@@ -49,11 +48,15 @@ router.get('/autocomplete', async (req, res) => {
         return res.status(400).json({ success: false, error: 'text is required' });
     }
 
-    // const url = https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(text)}&filter=countrycode:us&format=json&apiKey=${process.env.GEOAPIFY_KEY};
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    res.json({ success: true, results: data.results });
+    try {
+        const url = `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(text)}&filter=countrycode:us&format=json&apiKey=${process.env.GEOAPIFY_KEY}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        console.log('Geoapify status:', response.status, 'results:', data.results?.length ?? 0);
+        res.json({ success: true, results: data.results ?? [] });
+    } catch (err) {
+        console.error('Autocomplete error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
 });
 module.exports = router;
