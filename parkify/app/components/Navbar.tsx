@@ -19,8 +19,8 @@ export default function Navbar() {
       <div className="flex justify-between items-center px-8 h-20 w-full max-w-screen-2xl mx-auto">
         {/* Left: brand + nav links */}
         <div className="flex items-center gap-12">
-          <Link href="/homepage" style={{ fontFamily: "Manrope, sans-serif" }}
-            className="text-2xl font-black text-blue-700 tracking-tighter no-underline">
+          <Link href="/homepage" style={{ fontFamily: "Montserrat, sans-serif" }}
+            className="text-2xl font-semibold italic text-blue-700 tracking-tighter no-underline">
             Parkly
           </Link>
           <div className="hidden md:flex gap-8 font-semibold tracking-tight">
