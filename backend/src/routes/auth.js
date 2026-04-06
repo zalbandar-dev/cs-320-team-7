@@ -62,7 +62,7 @@ router.post('/login', async (req, res) => {
         const user = await getUserInfo(username);
         
         // 3. Issue the token
-        const token = await generateJWT(user.username);
+        const token = await generateJWT(user.username, user.id);
 
         res.status(200).json({
             message: "Login successful",
@@ -81,7 +81,7 @@ router.post('/login', async (req, res) => {
 // GET /api/user → returns the logged-in user's info (requires valid JWT)
 router.get('/user', verifyToken, async (req, res) => {
     try {
-        const user = await getUserInfo(req.user.sub);
+        const user = await getUserInfo(req.user.username);
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
