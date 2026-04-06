@@ -18,6 +18,13 @@ export default function AccountPage() {
   const [form, setForm] = useState(empty);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [listingCount, setListingCount] = useState<number>(0);
+
+  useEffect(() => {
+    fetch("/api/mySpots", { headers: getAuthHeaders() })
+      .then((r) => r.json())
+      .then((data) => setListingCount(Array.isArray(data?.data) ? data.data.length : 0));
+  }, []);
 
   useEffect(() => {
     fetch("/api/user", { headers: getAuthHeaders() })
@@ -115,7 +122,7 @@ export default function AccountPage() {
             <div className="bg-primary text-on-primary rounded-xl p-8 flex flex-col justify-between overflow-hidden relative">
               <div className="relative z-10">
                 <p className="text-white/60 font-bold text-sm mb-1 uppercase tracking-widest">Active Listings</p>
-                <h4 className="text-5xl font-black">8</h4>
+                <h4 className="text-5xl font-black">{listingCount}</h4>
               </div>
               <div className="relative z-10 pt-8">
                 <button type="button" className="w-full py-3 px-6 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl font-bold transition-colors flex items-center justify-center gap-2">
