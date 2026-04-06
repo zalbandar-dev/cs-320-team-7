@@ -8,6 +8,7 @@ const {
     generateJWT,
     getUserInfo
 } = require('../utils/authentication.js');
+const verifyToken = require('../utils/verifyToken.js');
 
 // POST   /api/auth/register   → validateInputCredentials(), hashPassword(), storeUser()
 router.post('/register', async (req, res) => {
@@ -77,9 +78,30 @@ router.post('/login', async (req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 });
+// GET /api/user → returns the logged-in user's info (requires valid JWT)
+router.get('/user', verifyToken, async (req, res) => {
+    try {
+        const user = await getUserInfo(req.user.sub);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const safe = user.redactSensitiveData();
+        res.status(200).json({
+            username: safe.username,
+            firstName: safe.firstName,
+            lastName: safe.lastName,
+            email: safe.email,
+            phone: safe.phone,
+            role: safe.role
+        });
+    } catch (err) {
+        console.error("Get User Error:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 // For future releases
 // POST   /api/auth/logout     → removeJWT()
-// GET    /api/auth/user/:username → getUserInfo()
 // POST   /api/auth/reset-password → generateResetToken(), hashResetToken(), sendResetLink()
 
 module.exports = router;

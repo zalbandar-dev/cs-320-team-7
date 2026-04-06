@@ -1,21 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/app/components/Navbar";
 import Sidebar from "@/app/components/Sidebar";
+import { getAuthHeaders } from "@/app/lib/auth";
 
-const initial = {
-  first_name: "James",
-  last_name: "Smith",
-  email: "jsmith@gmail.com",
-  phone: "4135550101",
-  role: "customer",
+const empty = {
+  first_name: "",
+  last_name: "",
+  email: "",
+  phone: "",
+  role: "",
   timezone: "Eastern Time (ET)",
 };
 
 export default function AccountPage() {
-  const [form, setForm] = useState(initial);
+  const [form, setForm] = useState(empty);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/user", { headers: getAuthHeaders() })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.username) {
+          setForm({
+            first_name: data.firstName ?? "",
+            last_name: data.lastName ?? "",
+            email: data.email ?? "",
+            phone: data.phone ?? "",
+            role: data.role ?? "",
+            timezone: "Eastern Time (ET)",
+          });
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const set = (field: string, value: string) => {
     setForm((p) => ({ ...p, [field]: value }));
@@ -26,6 +46,14 @@ export default function AccountPage() {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
+
+  if (loading) {
+    return (
+      <div className="bg-background min-h-screen flex items-center justify-center">
+        <span className="text-on-surface-variant">Loading...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-background text-on-background min-h-screen flex flex-col">
@@ -148,7 +176,7 @@ export default function AccountPage() {
                   </div>
                 </div>
                 <div className="px-8 py-6 bg-surface-container-lowest flex justify-end gap-4 border-t border-slate-100">
-                  <button type="button" onClick={() => { setForm(initial); setSaved(false); }}
+                  <button type="button" onClick={() => { setForm(empty); setSaved(false); }}
                     className="px-6 py-2.5 rounded-full font-bold text-on-surface-variant hover:bg-surface-container transition-colors">
                     Discard
                   </button>
