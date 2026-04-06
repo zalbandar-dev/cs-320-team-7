@@ -21,7 +21,7 @@ export default function Navbar() {
         <div className="flex items-center gap-12">
           <Link href="/homepage" style={{ fontFamily: "Montserrat, sans-serif" }}
             className="text-2xl font-semibold italic text-blue-700 tracking-tighter no-underline">
-            Parkly
+            Parkify
           </Link>
           <div className="hidden md:flex gap-8 font-semibold tracking-tight">
             <Link href="/" className="text-slate-600 hover:text-blue-600 transition-colors duration-200 no-underline">

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Parkly - Find Parking Anywhere",
+  title: "Parkify - Find Parking Anywhere",
   description: "Airbnb for parking spots. Find and book parking spaces near you.",
 };
 

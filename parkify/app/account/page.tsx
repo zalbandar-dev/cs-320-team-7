@@ -239,8 +239,8 @@ export default function AccountPage() {
       <footer className="md:ml-64 w-auto py-12 border-t mt-auto bg-white border-slate-100">
         <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex flex-col items-start gap-2">
-            <span className="font-bold text-slate-900 font-headline">Parkly</span>
-            <p className="text-xs text-slate-500">© 2024 Parkly. All rights reserved.</p>
+            <span className="font-bold text-slate-900 font-headline">Parkify</span>
+            <p className="text-xs text-slate-500">© 2024 Parkify. All rights reserved.</p>
           </div>
           <div className="flex gap-8">
             <a href="#" className="text-xs text-slate-500 hover:text-blue-600 transition-colors">Privacy Policy</a>
