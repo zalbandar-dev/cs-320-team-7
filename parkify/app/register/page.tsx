@@ -53,7 +53,7 @@ export default function RegisterPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "'Montserrat', sans-serif",
         }}>
         <div style={{
             background: '#0f1628',
@@ -76,7 +76,7 @@ export default function RegisterPage() {
             <span className="material-symbols-outlined" style={{ fontSize: '32px', color: '#3d5af1' }}>check_circle</span>
             </div>
             <h2 style={{
-            fontFamily: "'Sora', sans-serif",
+            fontFamily: "'Montserrat', sans-serif",
             fontSize: '26px',
             fontWeight: 800,
             color: '#fff',
@@ -109,7 +109,7 @@ export default function RegisterPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Sora:wght@700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,600;1,600&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -118,7 +118,7 @@ export default function RegisterPage() {
           display: flex;
           min-height: 100vh;
           background: #0d1225;
-          font-family: 'DM Sans', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           color: #e8eaf6;
         }
         .reg-left {
@@ -151,20 +151,21 @@ export default function RegisterPage() {
           background: #3d5af1;
           border-radius: 10px;
           display: flex; align-items: center; justify-content: center;
-          font-family: 'Sora', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           font-weight: 800;
           font-size: 22px;
           color: #fff;
         }
         .brand-name {
-          font-family: 'Sora', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           font-size: 26px;
-          font-weight: 800;
+          font-weight: 600;
+          font-style: italic;
           letter-spacing: -0.5px;
           color: #fff;
         }
         .tagline h1 {
-          font-family: 'Sora', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           font-size: clamp(28px, 3vw, 44px);
           font-weight: 800;
           line-height: 1.15;
@@ -196,7 +197,7 @@ export default function RegisterPage() {
           padding: 20px 0;
         }
         .form-card h2 {
-          font-family: 'Sora', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           font-size: 28px;
           font-weight: 800;
           color: #fff;
@@ -251,7 +252,7 @@ export default function RegisterPage() {
           border-radius: 10px;
           font-size: 15px;
           color: #e8eaf6;
-          font-family: 'DM Sans', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           outline: none;
           transition: border-color 0.2s, box-shadow 0.2s;
           appearance: none;
@@ -274,7 +275,7 @@ export default function RegisterPage() {
           border: 1.5px solid rgba(61,90,241,0.25);
           background: #1a2340;
           color: #7b9fff;
-          font-family: 'DM Sans', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           font-size: 14px;
           font-weight: 600;
           cursor: pointer;
@@ -317,7 +318,7 @@ export default function RegisterPage() {
           border-radius: 10px;
           font-size: 15px;
           font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           cursor: pointer;
           transition: background 0.2s, transform 0.15s;
           margin-top: 4px;
@@ -363,7 +364,7 @@ export default function RegisterPage() {
           border-radius: 10px;
           font-size: 15px;
           font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           text-decoration: none;
           transition: background 0.2s, border-color 0.2s, transform 0.15s;
           width: 100%;

@@ -45,7 +45,7 @@ export default function LoginPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Sora:wght@700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,600;1,600&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -54,7 +54,7 @@ export default function LoginPage() {
           display: flex;
           min-height: 100vh;
           background: #0d1225;
-          font-family: 'DM Sans', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           color: #e8eaf6;
         }
         .login-left {
@@ -87,20 +87,21 @@ export default function LoginPage() {
           background: #3d5af1;
           border-radius: 10px;
           display: flex; align-items: center; justify-content: center;
-          font-family: 'Sora', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           font-weight: 800;
           font-size: 22px;
           color: #fff;
         }
         .brand-name {
-          font-family: 'Sora', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           font-size: 26px;
-          font-weight: 800;
+          font-weight: 600;
+          font-style: italic;
           letter-spacing: -0.5px;
           color: #fff;
         }
         .tagline h1 {
-          font-family: 'Sora', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           font-size: clamp(28px, 3vw, 44px);
           font-weight: 800;
           line-height: 1.15;
@@ -130,7 +131,7 @@ export default function LoginPage() {
           max-width: 380px;
         }
         .form-card h2 {
-          font-family: 'Sora', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           font-size: 28px;
           font-weight: 800;
           color: #fff;
@@ -179,7 +180,7 @@ export default function LoginPage() {
           border-radius: 10px;
           font-size: 15px;
           color: #e8eaf6;
-          font-family: 'DM Sans', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           outline: none;
           transition: border-color 0.2s, box-shadow 0.2s;
         }
@@ -213,7 +214,7 @@ export default function LoginPage() {
           border-radius: 10px;
           font-size: 15px;
           font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           cursor: pointer;
           transition: background 0.2s, transform 0.15s;
           margin-top: 4px;
@@ -259,7 +260,7 @@ export default function LoginPage() {
           border-radius: 10px;
           font-size: 15px;
           font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
+          font-family: 'Montserrat', sans-serif;
           text-decoration: none;
           transition: background 0.2s, border-color 0.2s, transform 0.15s;
           width: 100%;
