@@ -1,0 +1,11 @@
+{
+  "name": "parkly",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix parkify\" \"npm run dev --prefix backend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}
