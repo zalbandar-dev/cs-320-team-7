@@ -6,6 +6,7 @@ import Link from "next/link";
 import Navbar from "@/app/components/Navbar";
 import Sidebar from "@/app/components/Sidebar";
 import { ParkingSpot } from "@/app/lib/types";
+import { getAuthHeaders } from "@/app/lib/auth";
 
 const STATUS_COLORS: Record<string, string> = {
   available: "bg-green-100 text-green-800",
@@ -21,7 +22,6 @@ const emptyForm = {
   hourly_rate: "",
   spot_type: "standard",
   description: "",
-  provider_id: "",
   latitude: "",
   longitude: "",
 };
@@ -50,7 +50,7 @@ export default function MyListingsPage() {
   const addressRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/api/listAvailableSpots")
+    fetch("/api/mySpots", { headers: getAuthHeaders() })
       .then((r) => r.json())
       .then((data) => setSpots(Array.isArray(data) ? data : data?.data ?? []))
       .finally(() => setLoading(false));
@@ -97,7 +97,7 @@ export default function MyListingsPage() {
 
   async function handleDelete(spotId: number) {
     if (!confirm("Delete this spot? This cannot be undone.")) return;
-    const res = await fetch(`/api/deleteSpot/${spotId}`, { method: "DELETE" });
+    const res = await fetch(`/api/deleteSpot/${spotId}`, { method: "DELETE", headers: getAuthHeaders() });
     const data = await res.json();
     if (data.success) {
       setSpots((prev) => prev.filter((s) => s.spot_id !== spotId));
@@ -112,11 +112,10 @@ export default function MyListingsPage() {
     setSubmitting(true);
     const res = await fetch("/api/addSpot", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify({
         ...form,
         hourly_rate: parseFloat(form.hourly_rate),
-        provider_id: parseInt(form.provider_id),
         latitude: form.latitude ? parseFloat(form.latitude) : null,
         longitude: form.longitude ? parseFloat(form.longitude) : null,
       }),
@@ -292,17 +291,6 @@ export default function MyListingsPage() {
                       <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
                     ))}
                   </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-1">Provider ID</label>
-                  <input
-                    required
-                    type="number"
-                    value={form.provider_id}
-                    onChange={(e) => setForm({ ...form, provider_id: e.target.value })}
-                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    placeholder="1"
-                  />
                 </div>
               </div>
 
