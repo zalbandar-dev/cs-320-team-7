@@ -7,7 +7,7 @@ const app = express();
 const PORT = 3001;
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:3001' }));
+app.use(cors({ origin: 'http://localhost:3000' }));
 app.use(express.json());
 
 // Supabase client — shared across all routes via app.get('supabase')

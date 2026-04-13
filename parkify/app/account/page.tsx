@@ -1,21 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/app/components/Navbar";
 import Sidebar from "@/app/components/Sidebar";
+import { getAuthHeaders } from "@/app/lib/auth";
 
-const initial = {
-  first_name: "James",
-  last_name: "Smith",
-  email: "jsmith@gmail.com",
-  phone: "4135550101",
-  role: "customer",
+const empty = {
+  first_name: "",
+  last_name: "",
+  email: "",
+  phone: "",
+  role: "",
   timezone: "Eastern Time (ET)",
 };
 
 export default function AccountPage() {
-  const [form, setForm] = useState(initial);
+  const [form, setForm] = useState(empty);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [listingCount, setListingCount] = useState<number>(0);
+
+  useEffect(() => {
+    fetch("/api/mySpots", { headers: getAuthHeaders() })
+      .then((r) => r.json())
+      .then((data) => setListingCount(Array.isArray(data?.data) ? data.data.length : 0));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/user", { headers: getAuthHeaders() })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.username) {
+          setForm({
+            first_name: data.firstName ?? "",
+            last_name: data.lastName ?? "",
+            email: data.email ?? "",
+            phone: data.phone ?? "",
+            role: data.role ?? "",
+            timezone: "Eastern Time (ET)",
+          });
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const set = (field: string, value: string) => {
     setForm((p) => ({ ...p, [field]: value }));
@@ -26,6 +53,14 @@ export default function AccountPage() {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
+
+  if (loading) {
+    return (
+      <div className="bg-background min-h-screen flex items-center justify-center">
+        <span className="text-on-surface-variant">Loading...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-background text-on-background min-h-screen flex flex-col">
@@ -87,7 +122,7 @@ export default function AccountPage() {
             <div className="bg-primary text-on-primary rounded-xl p-8 flex flex-col justify-between overflow-hidden relative">
               <div className="relative z-10">
                 <p className="text-white/60 font-bold text-sm mb-1 uppercase tracking-widest">Active Listings</p>
-                <h4 className="text-5xl font-black">8</h4>
+                <h4 className="text-5xl font-black">{listingCount}</h4>
               </div>
               <div className="relative z-10 pt-8">
                 <button type="button" className="w-full py-3 px-6 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl font-bold transition-colors flex items-center justify-center gap-2">
@@ -148,7 +183,7 @@ export default function AccountPage() {
                   </div>
                 </div>
                 <div className="px-8 py-6 bg-surface-container-lowest flex justify-end gap-4 border-t border-slate-100">
-                  <button type="button" onClick={() => { setForm(initial); setSaved(false); }}
+                  <button type="button" onClick={() => { setForm(empty); setSaved(false); }}
                     className="px-6 py-2.5 rounded-full font-bold text-on-surface-variant hover:bg-surface-container transition-colors">
                     Discard
                   </button>
@@ -204,8 +239,8 @@ export default function AccountPage() {
       <footer className="md:ml-64 w-auto py-12 border-t mt-auto bg-white border-slate-100">
         <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex flex-col items-start gap-2">
-            <span className="font-bold text-slate-900 font-headline">Parkly</span>
-            <p className="text-xs text-slate-500">© 2024 Parkly. All rights reserved.</p>
+            <span className="font-bold text-slate-900 font-headline">Parkify</span>
+            <p className="text-xs text-slate-500">© 2024 Parkify. All rights reserved.</p>
           </div>
           <div className="flex gap-8">
             <a href="#" className="text-xs text-slate-500 hover:text-blue-600 transition-colors">Privacy Policy</a>
