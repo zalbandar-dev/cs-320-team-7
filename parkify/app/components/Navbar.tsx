@@ -24,7 +24,7 @@ export default function Navbar() {
             Parkify
           </Link>
           <div className="hidden md:flex gap-8 font-semibold tracking-tight">
-            <Link href="/" className="text-slate-600 hover:text-blue-600 transition-colors duration-200 no-underline">
+            <Link href="/homepage" className="text-slate-600 hover:text-blue-600 transition-colors duration-200 no-underline">
               Find Parking
             </Link>
             <Link href="/my-listings?new=true" className="text-slate-600 hover:text-blue-600 transition-colors duration-200 no-underline">
