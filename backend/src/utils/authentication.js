@@ -152,12 +152,117 @@ async function getUserInfo(username) {
     return u;
 }
 
+async function removeJWT(token) {
+    const secret = process.env.JWT_SECRET;
+
+    try {
+        const decoded = jwt.verify(token, secret); //Get payload
+
+        const { error } = await supabase
+            .from('jwt_blacklist')
+            .insert([
+                {
+                    token: decoded.jti,
+                    user_id: decoded.sub,
+                    expires_at: new Date(decoded.exp * 1000).toISOString(),
+                    blacklisted_at: new Date().toISOString()
+                }
+            ]);
+
+        if (error) throw error;
+
+        return { success: true };
+    } catch (err) {
+        console.error("Blacklisting failed:", err.message);
+        return { success: false, error: err.message };
+    }
+}
+
+//On Delete Cascade in database tables handles the rest
+async function deleteUser(username) {
+    const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('username', username); //Matches the row where username equals the input
+
+    if (error) {
+        return new status(false, "Failed to delete user: " + error.message);
+    }
+
+    return new status(true, "User deleted successfully");
+}
+
+function redactSensitiveData(user) {
+    if (!user) return null;
+
+    // Create a copy and remove sensitive fields
+    const { password_hash, ...publicData } = user;
+
+    return publicData;
+}
+
+async function getPublicProfile(username) {
+    const user = await getUserInfo(username);
+    if (!user) return new status(false, "User not found");
+
+    const redacted = redactSensitiveData(user);
+    return new status(true, "", redacted);
+}
+
+async function generateResetToken() {
+    // Generate 32 bytes of random data and convert to hex string
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    
+    // Hash the token immediately (SHA-256)
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    
+    // Set expiration (e.g., 1 hour from now)
+    const expiresAt = new Date(Date.now() + 3600000).toISOString();
+
+    return { rawToken, hashedToken, expiresAt };
+}
+
+function hashResetToken(rawToken) {
+    return crypto.createHash('sha256').update(rawToken).digest('hex');
+}
+
+/*
+async function sendResetLink(email, rawToken) {
+    const resetUrl = `https://yourdomain.com/reset-password?token=${rawToken}`;
+    
+    // Example using a fetch request to a mailing service (like Resend)
+    const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            from: 'noreply@yourdomain.com',
+            to: email,
+            subject: 'Reset Your Password',
+            html: `
+                <p>You requested a password reset.</p>
+                <p>Click the link below to set a new password. This link expires in 1 hour.</p>
+                <a href="${resetUrl}">Reset Password</a>
+            `
+        })
+    });
+
+    return response.ok;
+}
+*/
+
 module.exports = {
     validateInputCredentials,
     hashPassword,
     validateLogin,
     storeUser,
     generateJWT,
-    getUserInfo
+    getUserInfo,
+    removeJWT,
+    deleteUser,
+    redactSensitiveData,
+    getPublicProfile
 };
 
