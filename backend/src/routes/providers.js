@@ -48,6 +48,39 @@ router.post('/providers/spots', verifyToken, async (req, res) => {
     res.status(201).json({ success: true, data: data[0] });
 });
 
+// Toggle availability for a parking spot (provider-only)
+router.patch('/providers/spots/:id/availability', async (req, res) => {
+    const { id } = req.params;
+    const { available, provider_id } = req.body;
+
+    if (typeof available !== 'boolean') {
+        return res.status(400).json({ success: false, error: 'available (boolean) is required' });
+    }
+    if (!provider_id) {
+        return res.status(400).json({ success: false, error: 'provider_id is required' });
+    }
+
+    const supabase = req.app.get('supabase');
+
+    // Filter by both spot_id AND provider_id so providers can only toggle their own spots
+    const { data, error } = await supabase
+        .from('parking_spots')
+        .update({ available })
+        .eq('spot_id', id)
+        .eq('provider_id', provider_id)
+        .select();
+
+    if (error) {
+        return res.status(500).json({ success: false, error: error.message });
+    }
+
+    if (!data || data.length === 0) {
+        return res.status(403).json({ success: false, error: 'Spot not found or you do not own this spot' });
+    }
+
+    res.json({ success: true, data: data[0] });
+});
+
 // Delete a parking spot
 router.delete('/providers/spots/:id', verifyToken, async (req, res) => {
     const { id } = req.params;

@@ -106,6 +106,23 @@ export default function MyListingsPage() {
     }
   }
 
+  async function handleToggleAvailability(spot: ParkingSpot) {
+    const newAvailable = !spot.available;
+    const res = await fetch(`/api/toggleSpotAvailability/${spot.spot_id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ available: newAvailable, provider_id: spot.provider_id }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setSpots((prev) =>
+        prev.map((s) => (s.spot_id === spot.spot_id ? { ...s, available: newAvailable } : s))
+      );
+    } else {
+      alert(data.error ?? "Failed to update availability.");
+    }
+  }
+
   async function handleAddSpot(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
@@ -194,6 +211,20 @@ export default function MyListingsPage() {
                           View
                         </button>
                       </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleAvailability(spot)}
+                        title={spot.available ? "Mark as unavailable" : "Mark as available"}
+                        className={`py-2 px-3 rounded-lg text-sm font-semibold transition-colors ${
+                          spot.available
+                            ? "bg-green-50 text-green-700 hover:bg-green-100"
+                            : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-sm">
+                          {spot.available ? "toggle_on" : "toggle_off"}
+                        </span>
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(spot.spot_id)}

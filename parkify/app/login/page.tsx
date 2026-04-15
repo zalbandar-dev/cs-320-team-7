@@ -34,6 +34,7 @@ export default function LoginPage() {
       localStorage.setItem('token', data.token);
       localStorage.setItem('username', data.user?.username || username);
       localStorage.setItem('role', data.user?.role || '');
+      localStorage.setItem('userId', String(data.user?.userId ?? ''));
 
       router.push('/homepage');
     } catch {

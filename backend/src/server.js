@@ -20,6 +20,7 @@ app.use('/api', require('./routes/serviceRequests'));
 app.use('/api', require('./routes/providers'));
 app.use('/api', require('./routes/auth'));
 app.use('/api', require('./routes/payments'));
+app.use('/api', require('./routes/bookings'));
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

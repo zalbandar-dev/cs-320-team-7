@@ -58,19 +58,29 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: loginStatus.message });
         }
 
-        // 2. Fetch user details for the payload
-        const user = await getUserInfo(username);
-        
-        // 3. Issue the token
-        const token = await generateJWT(user.username, user.id);
+        // 2. Fetch user_id (numeric PK) and display fields directly
+        const supabase = req.app.get('supabase');
+        const { data: userRow, error: userErr } = await supabase
+            .from('users')
+            .select('user_id, username, first_name, role')
+            .eq('username', username)
+            .single();
+
+        if (userErr || !userRow) {
+            return res.status(500).json({ error: 'Failed to retrieve user' });
+        }
+
+        // 3. Issue the token — sub is the numeric user_id
+        const token = await generateJWT(userRow.user_id);
 
         res.status(200).json({
             message: "Login successful",
             token,
             user: {
-                username: user.username,
-                firstName: user.firstName,
-                role: user.role
+                username: userRow.username,
+                firstName: userRow.first_name,
+                role: userRow.role,
+                userId: userRow.user_id,
             }
         });
     } catch (err) {
@@ -81,18 +91,25 @@ router.post('/login', async (req, res) => {
 // GET /api/user → returns the logged-in user's info (requires valid JWT)
 router.get('/user', verifyToken, async (req, res) => {
     try {
-        const user = await getUserInfo(req.user.username);
-        if (!user) {
+        const supabase = req.app.get('supabase');
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('user_id, username, first_name, last_name, email, phone, role')
+            .eq('user_id', req.user.sub)
+            .single();
+
+        if (error || !user) {
             return res.status(404).json({ error: 'User not found' });
         }
-        const safe = user.redactSensitiveData();
+
         res.status(200).json({
-            username: safe.username,
-            firstName: safe.firstName,
-            lastName: safe.lastName,
-            email: safe.email,
-            phone: safe.phone,
-            role: safe.role
+            userId: user.user_id,
+            username: user.username,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
         });
     } catch (err) {
         console.error("Get User Error:", err);
