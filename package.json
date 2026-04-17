@@ -2,8 +2,25 @@
   "name": "parkly",
   "version": "1.0.0",
   "private": true,
+  "//": [
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    "TEAMMATES — first time pulling this change:",
+    "  1. Delete your old node_modules folders:",
+    "       rm -rf backend/node_modules parkify/node_modules node_modules",
+    "  2. Run ONE install from the root (not inside backend/ or parkify/):",
+    "       npm install",
+    "After that, you never need to cd into backend/ or parkify/ to install.",
+    "All dependencies now live in the root node_modules/.",
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  ],
+  "workspaces": [
+    "backend",
+    "parkify"
+  ],
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix parkify\" \"npm run dev --prefix backend\""
+    "dev": "concurrently \"npm run dev --prefix parkify\" \"npm run dev --prefix backend\"",
+    "test": "npm run test --prefix backend",
+    "install:clean": "rm -rf backend/node_modules parkify/node_modules node_modules && npm install"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"
