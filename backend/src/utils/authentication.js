@@ -152,6 +152,7 @@ async function getUserInfo(username) {
     return u;
 }
 
+//TO DO: Get Cron Job working for removing expired JWT tokens from the blacklist table
 async function removeJWT(token) {
     const secret = process.env.JWT_SECRET;
 
