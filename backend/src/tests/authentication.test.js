@@ -1,5 +1,8 @@
 // 1. Define constants with the 'mock' prefix
 const mockHash = "$2b$10$7R9jI4XvG8y.u6Vn1K6mReHj7O1fG6B8u5z7eH9fG6B8u5z7eH9fG";
+const mockRawToken = "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6";
+const mockHashedToken = "6162336465666768696a306b316c326d336e346f357036"; // Mocked hex representation
+const mockExp = Math.floor(Date.now() / 1000) + 3600;
 
 // 2. Mock bcryptjs FIRST to ensure stable results regardless of Node's thread pool
 jest.mock('bcryptjs', () => ({
@@ -178,6 +181,149 @@ describe('Auth System Unit Tests', () => {
             expect(result.username).toBe("jsmith92");
             expect(result.email).toBe("jsmith@gmail.com");
             expect(result.firstName).toBe("James");
+        });
+    });
+});
+
+// 2. Mocking JWT and Crypto
+jest.mock('jsonwebtoken', () => ({
+    verify: jest.fn((token, secret) => {
+        if (token === "valid_token") {
+            return { jti: "mock_jti", sub: 123, exp: mockExp };
+        }
+        throw new Error("Invalid token");
+    })
+}));
+
+jest.mock('crypto', () => {
+    const actualCrypto = jest.requireActual('crypto');
+    return {
+        ...actualCrypto,
+        randomBytes: jest.fn(() => Buffer.from('mocked32bytesofdataforresettoken')),
+        createHash: jest.fn(() => ({
+            update: jest.fn().mockReturnThis(),
+            digest: jest.fn(() => "mockedsha256hash")
+        }))
+    };
+});
+
+// 3. Mocking Supabase
+jest.mock('@supabase/supabase-js', () => ({
+    createClient: () => ({
+        from: (table) => ({
+            delete: () => ({
+                eq: (col, val) => {
+                    if (val === "error_user") return Promise.resolve({ error: { message: "DB Error" } });
+                    return Promise.resolve({ error: null });
+                }
+            }),
+            insert: async (data) => {
+                return { error: null };
+            },
+            select: () => ({
+                eq: (col, val) => ({
+                    single: async () => {
+                        if (val === "jsmith92") {
+                            return { data: { username: "jsmith92", password_hash: "secret" }, error: null };
+                        }
+                        return { data: null, error: { message: "Not found" } };
+                    }
+                })
+            })
+        })
+    })
+}));
+
+// Mocking the status class as used in your snippets
+class status {
+    constructor(flag, message, data = null) {
+        this.flag = flag;
+        this.message = message;
+        this.data = data;
+    }
+}
+
+// 4. Require logic
+const {
+    removeJWT,
+    deleteUser,
+    redactSensitiveData,
+    getPublicProfile,
+    generateResetToken,
+    hashResetToken
+} = require('../utils/authentication.js');
+
+describe('Extended Auth & Security Unit Tests', () => {
+
+    describe('removeJWT', () => {
+        test('Valid JWT returns success true', async () => {
+            const result = await removeJWT("valid_token");
+            expect(result.success).toBe(true);
+        });
+
+        test('Invalid JWT returns success false', async () => {
+            const result = await removeJWT("invalid_token");
+            expect(result.success).toBe(false);
+            expect(result.error).toBe("Invalid token");
+        });
+    });
+
+    describe('deleteUser', () => {
+        test('Successful deletion returns true status', async () => {
+            const result = await deleteUser("jsmith92");
+            expect(result.flag).toBe(true);
+            expect(result.message).toContain("successfully");
+        });
+
+        test('Database error returns false status', async () => {
+            const result = await deleteUser("error_user");
+            expect(result.flag).toBe(false);
+            expect(result.message).toContain("Failed to delete");
+        });
+    });
+
+    describe('redactSensitiveData', () => {
+        test('Redacts password_hash from user object', () => {
+            const user = { username: "jsmith92", password_hash: "secret123", email: "j@gm.com" };
+            const result = redactSensitiveData(user);
+            expect(result.password_hash).toBeUndefined();
+            expect(result.username).toBe("jsmith92");
+        });
+
+        test('Returns null if user is null', () => {
+            expect(redactSensitiveData(null)).toBeNull();
+        });
+    });
+
+    describe('getPublicProfile', () => {
+        test('Valid user returns redacted profile', async () => {
+            const result = await getPublicProfile("jsmith92");
+            expect(result.flag).toBe(true);
+            expect(result.data.password_hash).toBeUndefined();
+        });
+
+        test('Non-existent user returns error status', async () => {
+            const result = await getPublicProfile("ghost");
+            expect(result.flag).toBe(false);
+            expect(result.message).toBe("User not found");
+        });
+    });
+
+    describe('generateResetToken', () => {
+        test('Generates raw token, hash, and expiration', async () => {
+            const result = await generateResetToken();
+            expect(result).toHaveProperty('rawToken');
+            expect(result).toHaveProperty('hashedToken');
+            expect(result).toHaveProperty('expiresAt');
+            // Verify our mock was called
+            expect(result.hashedToken).toBe("mockedsha256hash");
+        });
+    });
+
+    describe('hashResetToken', () => {
+        test('Returns SHA-256 hash of input', () => {
+            const hash = hashResetToken("some_token");
+            expect(hash).toBe("mockedsha256hash");
         });
     });
 });
