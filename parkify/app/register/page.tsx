@@ -3,6 +3,7 @@
 import { useState } from 'react';
 // import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import PasswordStrength from '../components/PasswordStrength';
 
 export default function RegisterPage() {
   // const router = useRouter();
@@ -506,6 +507,7 @@ export default function RegisterPage() {
                     required
                   />
                 </div>
+                <PasswordStrength password={pwd} />
               </div>
 
               <div className="field">
