@@ -10,7 +10,7 @@ router.get('/service-requests', verifyToken, async (req, res) => {
 
     const { data, error } = await supabase
         .from('service_requests')
-        .select('*')
+        .select('*, profiles(full_name, initials, role), spots(name)')
         .not('status', 'eq', CLOSED_STATUSES[0])   // not 'completed'
         .not('status', 'eq', CLOSED_STATUSES[1])   // not 'rejected'
         .order('created_at', { ascending: false });
@@ -68,7 +68,7 @@ router.get('/service-requests/:id', verifyToken, async (req, res) => {
 
     const { data, error } = await supabase
         .from('service_requests')
-        .select('*')
+        .select('*, profiles(full_name, initials, role), spots(name)')
         .eq('request_id', id)
         .single();
 
