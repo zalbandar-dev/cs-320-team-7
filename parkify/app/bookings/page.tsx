@@ -8,9 +8,10 @@ import Sidebar from "@/app/components/Sidebar";
 import Navbar from "@/app/components/Navbar";
 
 const STATUS_STYLES: Record<string, { color: string; bg: string; label: string }> = {
-  active:    { color: "#15803d", bg: "#dcfce7", label: "Active" },
-  completed: { color: "#1d4ed8", bg: "#dbeafe", label: "Completed" },
-  cancelled: { color: "#b91c1c", bg: "#fee2e2", label: "Cancelled" },
+  pending_provider: { color: "#92400e", bg: "#fef3c7", label: "Pending Approval" },
+  active:           { color: "#15803d", bg: "#dcfce7", label: "Confirmed"        },
+  completed:        { color: "#1d4ed8", bg: "#dbeafe", label: "Completed"        },
+  cancelled:        { color: "#b91c1c", bg: "#fee2e2", label: "Cancelled"        },
 };
 
 function formatDateRange(start: string, end: string) {
@@ -120,8 +121,16 @@ export default function BookingsPage() {
                           {spot?.address ?? `Spot #${b.spot_id}`}
                         </p>
                         {spot?.zip_code && (
-                          <p style={{ fontSize: "13px", color: "#6b7280", margin: 0 }}>{spot.zip_code} · {spot.spot_type}</p>
+                          <p style={{ fontSize: "13px", color: "#6b7280", margin: "0 0 4px" }}>{spot.zip_code} · {spot.spot_type}</p>
                         )}
+                        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                          <span style={{ fontSize: "11px", fontFamily: "monospace", background: "#f3f4f6", color: "#374151", padding: "2px 8px", borderRadius: "6px", border: "1px solid #e5e7eb" }}>
+                            Booking ID: {b.booking_id}
+                          </span>
+                          <span style={{ fontSize: "11px", fontFamily: "monospace", background: "#f3f4f6", color: "#374151", padding: "2px 8px", borderRadius: "6px", border: "1px solid #e5e7eb" }}>
+                            Spot ID: {b.spot_id}
+                          </span>
+                        </div>
                       </div>
                       <span style={{ padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: 700, color: style.color, background: style.bg, flexShrink: 0 }}>
                         {style.label}
@@ -147,7 +156,7 @@ export default function BookingsPage() {
                       <p style={{ fontSize: "13px", color: "#6b7280", margin: 0 }}>
                         {b.vehicle_make} {b.vehicle_model} · <span style={{ fontFamily: "monospace" }}>{b.license_plate}</span>
                       </p>
-                      {b.status === "active" && (
+                      {["active", "pending_provider"].includes(b.status) && (
                         <button
                           type="button"
                           onClick={() => handleCancel(b.booking_id)}
