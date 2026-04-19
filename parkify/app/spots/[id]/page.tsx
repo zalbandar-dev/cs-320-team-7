@@ -141,10 +141,13 @@ export default function SpotDetailPage() {
           <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
             <span style={{ fontSize: "32px" }}>✓</span>
           </div>
-          <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#111827", margin: "0 0 8px" }}>Booking Confirmed!</h2>
-          <p style={{ fontSize: "14px", color: "#6b7280", margin: "0 0 8px" }}>{spot.address}</p>
-          <p style={{ fontSize: "14px", color: "#6b7280", margin: "0 0 24px" }}>
+          <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#111827", margin: "0 0 8px" }}>Request Submitted!</h2>
+          <p style={{ fontSize: "14px", color: "#6b7280", margin: "0 0 4px" }}>{spot.address}</p>
+          <p style={{ fontSize: "14px", color: "#6b7280", margin: "0 0 4px" }}>
             {new Date(startTime).toLocaleString()} → {new Date(endTime).toLocaleString()}
+          </p>
+          <p style={{ fontSize: "13px", color: "#92400e", background: "#fef3c7", borderRadius: "8px", padding: "8px 14px", margin: "0 0 16px" }}>
+            Awaiting provider confirmation
           </p>
           <p style={{ fontSize: "24px", fontWeight: 700, color: "#15803d", margin: "0 0 32px" }}>${estimatedPrice.toFixed(2)} total</p>
           <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
