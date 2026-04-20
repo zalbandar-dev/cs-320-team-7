@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const verifyToken = require('../utils/verifyToken');
 
-// Search all available parking spots 
+// Search all available parking spots
 router.get('/allSpots', async (req, res) => {
-
     const supabase = req.app.get('supabase');
 
     const { data, error } = await supabase
@@ -77,4 +77,6 @@ router.get('/autocomplete', async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 });
+
+
 module.exports = router;
