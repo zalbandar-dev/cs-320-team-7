@@ -8,8 +8,7 @@ router.get('/allSpots', async (req, res) => {
 
     const { data, error } = await supabase
         .from('parking_spots')
-        .select('')
-        .eq('available', true);
+        .select('*');
 
     if (error) {
         return res.status(500).json({ success: false, error: error.message });
@@ -30,7 +29,7 @@ router.get('/spotByZip', async (req, res) => {
 
     const { data, error } = await supabase
         .from('parking_spots')
-        .select('')
+        .select('*')
         .eq('zip_code', zip_code)
         .eq('available', true);
 
@@ -41,6 +40,24 @@ router.get('/spotByZip', async (req, res) => {
     res.json({ success: true, count: data.length, data });
 });
 
+// Get a single parking spot by ID
+router.get('/spot/:id', async (req, res) => {
+    const { id } = req.params;
+    const supabase = req.app.get('supabase');
+
+    const { data, error } = await supabase
+        .from('parking_spots')
+        .select('*')
+        .eq('spot_id', id)
+        .single();
+
+    if (error) {
+        return res.status(404).json({ success: false, error: error.message });
+    }
+
+    res.json({ success: true, data });
+});
+
 // Address autocomplete via Geoapify
 router.get('/autocomplete', async (req, res) => {
     const { text } = req.query;
@@ -49,11 +66,15 @@ router.get('/autocomplete', async (req, res) => {
         return res.status(400).json({ success: false, error: 'text is required' });
     }
 
-    // const url = https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(text)}&filter=countrycode:us&format=json&apiKey=${process.env.GEOAPIFY_KEY};
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    res.json({ success: true, results: data.results });
+    try {
+        const url = `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(text)}&filter=countrycode:us&format=json&apiKey=${process.env.GEOAPIFY_KEY}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        console.log('Geoapify status:', response.status, 'results:', data.results?.length ?? 0);
+        res.json({ success: true, results: data.results ?? [] });
+    } catch (err) {
+        console.error('Autocomplete error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
 });
 module.exports = router;

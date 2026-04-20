@@ -9,7 +9,7 @@ const crypto = require('crypto');
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY
+    process.env.SUPABASE_KEY
 );
 
 class status{
@@ -97,9 +97,6 @@ async function validateLogin(username, pwd) {
         return new status(false, "No user found with the provided username");
     }
 
-    console.log("DEBUG: Input PWD:", pwd);
-    console.log("DEBUG: DB Hash:", user ? user.password_hash : "MISSING");
-
     const isMatch = await bcrypt.compare(pwd.trim(), user.password_hash.trim());
 
     if (!isMatch) {
@@ -129,11 +126,12 @@ async function storeUser(userData) {
     return new status(true, "");
 }
 
-async function generateJWT(userID) {
+async function generateJWT(userID, userId) {
     const secret = process.env.JWT_SECRET;
-    
+
     const payload = {
-        sub: userID,
+        sub: userId,     // integer user_id — for DB foreign-key lookups (provider_id, user_id FKs)
+        username: userID,
         iat: Math.floor(Date.now() / 1000),
         jti: crypto.randomBytes(16).toString('hex')
     };
@@ -149,7 +147,9 @@ async function getUserInfo(username) {
         .single();
 
     if (error || !user) return null;
-    return new userData(user.username, user.password_hash, user.email, user.first_name, user.last_name, user.phone, user.role);
+    const u = new userData(user.username, user.password_hash, user.email, user.first_name, user.last_name, user.phone, user.role);
+    u.id = user.user_id; // integer primary key — needed for DB foreign-key lookups (provider_id, user_id FKs)
+    return u;
 }
 
 module.exports = {

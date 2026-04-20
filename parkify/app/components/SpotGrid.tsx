@@ -1,4 +1,4 @@
-import { ParkingSpot } from "@/lib/types";
+import { ParkingSpot } from "@/app/lib/types";
 import SpotCard from "./SpotCard";
 
 interface SpotGridProps {

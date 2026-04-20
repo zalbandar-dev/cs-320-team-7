@@ -7,7 +7,7 @@ const app = express();
 const PORT = 3001;
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:3001' }));
+app.use(cors({ origin: 'http://localhost:3000' }));
 app.use(express.json());
 
 // Supabase client — shared across all routes via app.get('supabase')
@@ -15,6 +15,8 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 app.set('supabase', supabase);
 
 // Routes
+app.use('/api', require('./routes/bookings'));
+app.use('/api', require('./routes/notifications'));
 app.use('/api', require('./routes/spots'));
 app.use('/api', require('./routes/serviceRequests'));
 app.use('/api', require('./routes/providers'));
