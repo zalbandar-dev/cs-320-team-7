@@ -5,10 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { href: "/homepage",            label: "Listings",             icon: "dashboard"   },
-  { href: "/my-listings",         label: "My Listings",          icon: "garage"      },
-  { href: "/service-requests",    label: "Service Requests",     icon: "handyman"    },
-  { href: "/my-service-requests", label: "My Service Requests",  icon: "engineering" },
+  { href: "/homepage",            label: "Listings",             icon: "dashboard"      },
+  { href: "/bookings",            label: "My Bookings",          icon: "local_parking"  },
+  { href: "/provider-bookings",   label: "Booking Requests",     icon: "event_available"},
+  { href: "/my-listings",         label: "My Listings",          icon: "garage"         },
+  { href: "/service-requests",    label: "Service Requests",     icon: "handyman"       },
+  { href: "/my-service-requests", label: "My Service Requests",  icon: "engineering"    },
 ];
 
 export default function Sidebar() {
