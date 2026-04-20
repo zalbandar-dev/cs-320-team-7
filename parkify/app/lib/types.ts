@@ -31,4 +31,5 @@ export interface ParkingSpot {
   provider_id: number;
   spot_type: string;
   zip_code: string;
+  image: string;
 }
