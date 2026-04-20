@@ -274,4 +274,128 @@ router.patch('/bookings/:id/cancel', verifyToken, async (req, res) => {
     return res.json({ success: true, data: updated });
 });
 
+// ─── REVIEWS ────────────────────────────────────────────────────────────
+
+// GET /api/bookings/reviews/check?spot_id=123
+// Returns whether current user has already reviewed this spot
+router.get('/bookings/reviews/check', verifyToken, async (req, res) => {
+    const supabase = req.app.get('supabase');
+    const userId = req.user.sub;
+    const spotId = parseInt(req.query.spot_id);
+
+    if (isNaN(spotId)) {
+        return res.status(400).json({ success: false, error: 'Invalid spot_id' });
+    }
+
+    const { data, error } = await supabase
+        .from('reviews')
+        .select('review_id')
+        .eq('user_id', userId)
+        .eq('spot_id', spotId);
+
+    if (error) {
+        return res.status(500).json({ success: false, error: 'Failed to check review status' });
+    }
+
+    return res.json({ success: true, hasReviewed: data.length > 0 });
+});
+
+// POST /api/bookings/reviews — submit a review
+router.post('/bookings/reviews', verifyToken, async (req, res) => {
+    const supabase = req.app.get('supabase');
+    const userId = req.user.sub;
+    const { spot_id, booking_id, rating, comment } = req.body;
+
+    if (!spot_id || !booking_id || !rating) {
+        return res.status(400).json({ success: false, error: 'spot_id, booking_id, and rating are required' });
+    }
+
+    if (rating < 1 || rating > 5 || !Number.isInteger(rating)) {
+        return res.status(400).json({ success: false, error: 'Rating must be an integer between 1 and 5' });
+    }
+
+    // Verify the booking belongs to this user and is completed
+    const { data: booking, error: bookingError } = await supabase
+        .from('bookings')
+        .select('booking_id, user_id, spot_id, status, end_time')
+        .eq('booking_id', booking_id)
+        .single();
+
+    if (bookingError || !booking) {
+        return res.status(404).json({ success: false, error: 'Booking not found' });
+    }
+
+    if (booking.user_id !== userId) {
+        return res.status(403).json({ success: false, error: 'Unauthorized' });
+    }
+
+    // Allow review if booking is completed OR if end_time has passed (for active bookings)
+    const now = new Date();
+    const endTime = new Date(booking.end_time);
+    if (booking.status === 'cancelled') {
+        return res.status(400).json({ success: false, error: 'Cannot review a cancelled booking' });
+    }
+    if (endTime > now && booking.status !== 'completed') {
+        return res.status(400).json({ success: false, error: 'Can only review past bookings' });
+    }
+
+    // Check for duplicate review (same user + same spot)
+    const { data: existing } = await supabase
+        .from('reviews')
+        .select('review_id')
+        .eq('user_id', userId)
+        .eq('spot_id', spot_id);
+
+    if (existing && existing.length > 0) {
+        return res.status(409).json({ success: false, error: 'You have already reviewed this spot' });
+    }
+
+    const { data: review, error: insertError } = await supabase
+        .from('reviews')
+        .insert({
+            user_id: userId,
+            spot_id,
+            booking_id,
+            rating,
+            comment: comment?.trim() || null,
+        })
+        .select()
+        .single();
+
+    if (insertError) {
+        console.error('Review insert error:', insertError);
+        return res.status(500).json({ success: false, error: 'Failed to submit review' });
+    }
+
+    return res.status(201).json({ success: true, data: review });
+});
+
+// GET /api/bookings/reviews/spot/:spotId — get average rating + count for a spot
+router.get('/bookings/reviews/spot/:spotId', async (req, res) => {
+    const supabase = req.app.get('supabase');
+    const spotId = parseInt(req.params.spotId);
+
+    if (isNaN(spotId)) {
+        return res.status(400).json({ success: false, error: 'Invalid spot_id' });
+    }
+
+    const { data: reviews, error } = await supabase
+        .from('reviews')
+        .select('rating')
+        .eq('spot_id', spotId);
+
+    if (error) {
+        return res.status(500).json({ success: false, error: 'Failed to fetch reviews' });
+    }
+
+    if (!reviews || reviews.length === 0) {
+        return res.json({ success: true, data: { average: 0, count: 0 } });
+    }
+
+    const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
+    const average = parseFloat((sum / reviews.length).toFixed(1));
+
+    return res.json({ success: true, data: { average, count: reviews.length } });
+});
+
 module.exports = router;

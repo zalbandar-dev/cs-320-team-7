@@ -8,10 +8,13 @@ import Sidebar from "@/app/components/Sidebar";
 import { ParkingSpot } from "@/app/lib/types";
 import { getAuthHeaders } from "@/app/lib/auth";
 
+const PLACEHOLDER_IMAGE =
+  "https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800&q=80";
+
 const STATUS_COLORS: Record<string, string> = {
   available: "bg-green-100 text-green-800",
-  occupied:  "bg-red-100 text-red-800",
-  reserved:  "bg-yellow-100 text-yellow-800",
+  occupied: "bg-red-100 text-red-800",
+  reserved: "bg-yellow-100 text-yellow-800",
 };
 
 const SPOT_TYPES = ["compact", "standard", "large", "motorcycle", "rv"];
@@ -24,6 +27,7 @@ const emptyForm = {
   description: "",
   latitude: "",
   longitude: "",
+  image: "",
 };
 
 interface GeoapifyResult {
@@ -34,16 +38,42 @@ interface GeoapifyResult {
   lon: number;
 }
 
+/**
+ * Extract city/town from a full address string.
+ * Tries to pull "City, ST" from typical US address formats.
+ * Falls back to the full address if parsing fails.
+ */
+function extractCityFromAddress(address: string): string {
+  const parts = address.split(",").map((p) => p.trim());
+
+  if (parts.length >= 3) {
+    const city = parts[parts.length - 3];
+    const stateZip = parts[parts.length - 2];
+    const state = stateZip.split(" ")[0];
+    if (state && state.length === 2 && state === state.toUpperCase()) {
+      return `${city}, ${state}`;
+    }
+    return city;
+  }
+
+  if (parts.length === 2) {
+    return parts[0];
+  }
+
+  return address;
+}
+
 export default function MyListingsPage() {
   const searchParams = useSearchParams();
   const [spots, setSpots] = useState<ParkingSpot[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(searchParams.get("new") === "true");
+  const [showModal, setShowModal] = useState(
+    searchParams.get("new") === "true"
+  );
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
-  // Autocomplete state
   const [suggestions, setSuggestions] = useState<GeoapifyResult[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -56,10 +86,12 @@ export default function MyListingsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Close suggestions on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (addressRef.current && !addressRef.current.contains(e.target as Node)) {
+      if (
+        addressRef.current &&
+        !addressRef.current.contains(e.target as Node)
+      ) {
         setShowSuggestions(false);
       }
     }
@@ -70,10 +102,16 @@ export default function MyListingsPage() {
   function handleAddressChange(value: string) {
     setForm((f) => ({ ...f, address: value }));
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (value.length < 3) { setSuggestions([]); setShowSuggestions(false); return; }
+    if (value.length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/autocomplete?text=${encodeURIComponent(value)}`);
+        const res = await fetch(
+          `/api/autocomplete?text=${encodeURIComponent(value)}`
+        );
         const data = await res.json();
         setSuggestions(data.results ?? []);
         setShowSuggestions(true);
@@ -97,7 +135,10 @@ export default function MyListingsPage() {
 
   async function handleDelete(spotId: number) {
     if (!confirm("Delete this spot? This cannot be undone.")) return;
-    const res = await fetch(`/api/deleteSpot/${spotId}`, { method: "DELETE", headers: getAuthHeaders() });
+    const res = await fetch(`/api/deleteSpot/${spotId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
     const data = await res.json();
     if (data.success) {
       setSpots((prev) => prev.filter((s) => s.spot_id !== spotId));
@@ -109,6 +150,20 @@ export default function MyListingsPage() {
   async function handleAddSpot(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
+
+    if (form.image.trim()) {
+      try {
+        const url = new URL(form.image.trim());
+        if (!["http:", "https:"].includes(url.protocol)) {
+          setFormError("Image URL must start with http:// or https://");
+          return;
+        }
+      } catch {
+        setFormError("Please enter a valid image URL.");
+        return;
+      }
+    }
+    console.log(form.image);
     setSubmitting(true);
     const res = await fetch("/api/addSpot", {
       method: "POST",
@@ -118,6 +173,7 @@ export default function MyListingsPage() {
         hourly_rate: parseFloat(form.hourly_rate),
         latitude: form.latitude ? parseFloat(form.latitude) : null,
         longitude: form.longitude ? parseFloat(form.longitude) : null,
+        image: form.image.trim() || null,
       }),
     });
     const data = await res.json();
@@ -138,12 +194,14 @@ export default function MyListingsPage() {
 
       <main className="lg:pl-64 pt-24 min-h-screen">
         <div className="max-w-7xl mx-auto px-8 py-10">
-
-          {/* Header */}
           <header className="flex items-center justify-between mb-10">
             <div>
-              <h1 className="text-4xl font-extrabold text-on-surface tracking-tight font-headline">My Listings</h1>
-              <p className="text-on-surface-variant mt-1">{spots.length} spots in your portfolio</p>
+              <h1 className="text-4xl font-extrabold text-on-surface tracking-tight font-headline">
+                My Listings
+              </h1>
+              <p className="text-on-surface-variant mt-1">
+                {spots.length} spots in your portfolio
+              </p>
             </div>
             <button
               type="button"
@@ -158,7 +216,10 @@ export default function MyListingsPage() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="bg-surface-container-lowest rounded-2xl overflow-hidden animate-pulse">
+                <div
+                  key={i}
+                  className="bg-surface-container-lowest rounded-2xl overflow-hidden animate-pulse"
+                >
                   <div className="h-48 bg-slate-200" />
                   <div className="p-6 space-y-3">
                     <div className="h-4 bg-slate-200 rounded w-3/4" />
@@ -169,42 +230,89 @@ export default function MyListingsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {spots.map((spot) => (
-                <div key={spot.spot_id} className="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-slate-100 flex flex-col group">
-                  <div className="p-5 flex-1 flex flex-col">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="bg-primary/10 text-primary px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-                        {spot.spot_type}
-                      </span>
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${STATUS_COLORS[spot.available ? "available" : "occupied"]}`}>
-                        {spot.available ? "available" : "occupied"}
-                      </span>
-                    </div>
-                    <h3 className="font-bold text-base text-on-surface mb-1">{spot.address}</h3>
-                    <p className="text-sm text-on-surface-variant flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm">location_on</span>
-                      {spot.zip_code}
-                    </p>
-                    <p className="text-sm text-on-surface-variant mt-1">{spot.description}</p>
-                    <p className="text-primary font-bold mt-2">${Number(spot.hourly_rate).toFixed(2)}<span className="text-xs font-normal text-on-surface-variant">/hr</span></p>
+              {spots.map((spot) => {
+                const imgSrc = spot.image?.trim() || PLACEHOLDER_IMAGE;
+                const cityTitle = extractCityFromAddress(spot.address);
 
-                    <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100">
-                      <Link href={`/spots/${spot.spot_id}`} className="flex-1 no-underline">
-                        <button type="button" className="w-full py-2 rounded-lg border border-slate-200 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors">
-                          View
+                return (
+                  <div
+                    key={spot.spot_id}
+                    className="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-slate-100 flex flex-col group"
+                  >
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={imgSrc}
+                        alt={spot.spot_type}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE;
+                        }}
+                      />
+                      <div className="absolute top-3 left-3 flex gap-2">
+                        <span className="bg-white/90 backdrop-blur px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-primary">
+                          {spot.spot_type}
+                        </span>
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                            STATUS_COLORS[
+                              spot.available ? "available" : "occupied"
+                            ]
+                          }`}
+                        >
+                          {spot.available ? "available" : "occupied"}
+                        </span>
+                      </div>
+                      <div className="absolute bottom-3 right-3 bg-primary text-on-primary px-3 py-1 rounded-lg font-bold text-sm">
+                        ${Number(spot.hourly_rate).toFixed(2)}
+                        <span className="text-[10px] opacity-80">/hr</span>
+                      </div>
+                    </div>
+
+                    <div className="p-5 flex-1 flex flex-col">
+                      <h3 className="font-bold text-base text-on-surface mb-1 leading-snug">
+                        {cityTitle}
+                      </h3>
+                      <p className="text-sm text-on-surface-variant truncate">
+                        {spot.address}
+                      </p>
+                      <p className="text-xs text-on-surface-variant/60 flex items-center gap-1 mt-0.5">
+                        <span className="material-symbols-outlined text-xs">
+                          location_on
+                        </span>
+                        {spot.zip_code}
+                      </p>
+                      {spot.description && (
+                        <p className="text-sm text-on-surface-variant mt-2 line-clamp-2">
+                          {spot.description}
+                        </p>
+                      )}
+
+                      <div className="flex gap-2 mt-auto pt-4 border-t border-slate-100">
+                        <Link
+                          href={`/spots/${spot.spot_id}`}
+                          className="flex-1 no-underline"
+                        >
+                          <button
+                            type="button"
+                            className="w-full py-2 rounded-lg border border-slate-200 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
+                          >
+                            View
+                          </button>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(spot.spot_id)}
+                          className="py-2 px-3 rounded-lg bg-red-50 text-error text-sm font-semibold hover:bg-red-100 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-sm">
+                            delete
+                          </span>
                         </button>
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(spot.spot_id)}
-                        className="py-2 px-3 rounded-lg bg-red-50 text-error text-sm font-semibold hover:bg-red-100 transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-sm">delete</span>
-                      </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -213,24 +321,37 @@ export default function MyListingsPage() {
       {/* Add Spot Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-8">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-8 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-extrabold text-on-surface">New Listing</h2>
-              <button type="button" onClick={() => { setShowModal(false); setFormError(""); setForm(emptyForm); }} className="text-on-surface-variant hover:text-on-surface">
+              <h2 className="text-2xl font-extrabold text-on-surface">
+                New Listing
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowModal(false);
+                  setFormError("");
+                  setForm(emptyForm);
+                }}
+                className="text-on-surface-variant hover:text-on-surface"
+              >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
 
             <form onSubmit={handleAddSpot} className="space-y-4">
-              {/* Address with autocomplete */}
               <div ref={addressRef} className="relative">
-                <label className="block text-sm font-semibold mb-1">Address</label>
+                <label className="block text-sm font-semibold mb-1">
+                  Address
+                </label>
                 <input
                   required
                   autoComplete="off"
                   value={form.address}
                   onChange={(e) => handleAddressChange(e.target.value)}
-                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  onFocus={() =>
+                    suggestions.length > 0 && setShowSuggestions(true)
+                  }
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Start typing an address..."
                 />
@@ -243,7 +364,9 @@ export default function MyListingsPage() {
                           onMouseDown={() => handleSelectSuggestion(s)}
                           className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 flex items-center gap-2"
                         >
-                          <span className="material-symbols-outlined text-sm text-slate-400">location_on</span>
+                          <span className="material-symbols-outlined text-sm text-slate-400">
+                            location_on
+                          </span>
                           {s.formatted}
                         </button>
                       </li>
@@ -254,24 +377,32 @@ export default function MyListingsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Zip Code</label>
+                  <label className="block text-sm font-semibold mb-1">
+                    Zip Code
+                  </label>
                   <input
                     required
                     value={form.zip_code}
-                    onChange={(e) => setForm({ ...form, zip_code: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, zip_code: e.target.value })
+                    }
                     className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="Auto-filled from address"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Hourly Rate ($)</label>
+                  <label className="block text-sm font-semibold mb-1">
+                    Hourly Rate ($)
+                  </label>
                   <input
                     required
                     type="number"
                     min="0"
                     step="0.01"
                     value={form.hourly_rate}
-                    onChange={(e) => setForm({ ...form, hourly_rate: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, hourly_rate: e.target.value })
+                    }
                     className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="5.00"
                   />
@@ -280,37 +411,96 @@ export default function MyListingsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Spot Type</label>
+                  <label className="block text-sm font-semibold mb-1">
+                    Spot Type
+                  </label>
                   <select
                     title="Spot Type"
                     value={form.spot_type}
-                    onChange={(e) => setForm({ ...form, spot_type: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, spot_type: e.target.value })
+                    }
                     className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     {SPOT_TYPES.map((t) => (
-                      <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                      <option key={t} value={t}>
+                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold mb-1">Description</label>
+                <label className="block text-sm font-semibold mb-1">
+                  Description
+                </label>
                 <textarea
                   rows={3}
                   value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, description: e.target.value })
+                  }
                   className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                   placeholder="Describe your parking spot..."
                 />
               </div>
 
-              {formError && <p className="text-sm text-red-600">{formError}</p>}
+              <div>
+                <label className="block text-sm font-semibold mb-1">
+                  Image URL
+                </label>
+                <input
+                  type="url"
+                  value={form.image}
+                  onChange={(e) =>
+                    setForm({ ...form, image: e.target.value })
+                  }
+                  className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="https://images.unsplash.com/photo-..."
+                />
+                {form.image.trim() && (
+                  <div className="mt-2 rounded-lg overflow-hidden border border-slate-200 h-36 bg-slate-50 relative">
+                    <img
+                      src={form.image.trim()}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const img = e.target as HTMLImageElement;
+                        img.style.display = "none";
+                        const parent = img.parentElement;
+                        if (parent && !parent.querySelector(".img-error")) {
+                          const msg = document.createElement("p");
+                          msg.className =
+                            "img-error absolute inset-0 flex items-center justify-center text-sm text-red-500";
+                          msg.textContent = "⚠ Could not load image preview";
+                          parent.appendChild(msg);
+                        }
+                      }}
+                      onLoad={(e) => {
+                        const img = e.target as HTMLImageElement;
+                        img.style.display = "block";
+                        const parent = img.parentElement;
+                        const errEl = parent?.querySelector(".img-error");
+                        if (errEl) errEl.remove();
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {formError && (
+                <p className="text-sm text-red-600">{formError}</p>
+              )}
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => { setShowModal(false); setFormError(""); setForm(emptyForm); }}
+                  onClick={() => {
+                    setShowModal(false);
+                    setFormError("");
+                    setForm(emptyForm);
+                  }}
                   className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-on-surface hover:bg-slate-50 transition-colors"
                 >
                   Cancel
