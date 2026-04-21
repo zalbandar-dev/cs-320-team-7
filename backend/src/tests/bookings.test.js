@@ -73,6 +73,11 @@ function makeEqTerminalBuilder(result) {
     return b;
 }
 
+// Notification insert: .insert({...})  — terminal is insert()
+function makeInsertBuilder(result = { data: null, error: null }) {
+    return { insert: jest.fn(() => Promise.resolve(result)) };
+}
+
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
 const FUTURE_START = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
@@ -87,7 +92,7 @@ const VALID_BODY = {
     license_plate: 'ABC-123',
 };
 
-const SPOT = { spot_id: 1, hourly_rate: 5.00, available: true };
+const SPOT = { spot_id: 1, hourly_rate: 5.00, available: true, provider_id: 99, address: '123 Main St' };
 
 const PENDING_BOOKING = {
     booking_id:    10,
@@ -100,16 +105,20 @@ const PENDING_BOOKING = {
     vehicle_make:  'Toyota',
     vehicle_model: 'Camry',
     license_plate: 'ABC-123',
-    parking_spots: { provider_id: 42 },
+    parking_spots: { provider_id: 42, address: '123 Main St' },
 };
 
 const ACTIVE_BOOKING   = { ...PENDING_BOOKING, status: 'active' };
-const PROVIDER_BOOKING = { ...PENDING_BOOKING, parking_spots: { provider_id: 99 } };
+const PROVIDER_BOOKING = { ...PENDING_BOOKING, parking_spots: { provider_id: 99, address: '123 Main St' } };
 
 // ─── beforeEach ───────────────────────────────────────────────────────────────
 
 beforeEach(() => {
     jest.clearAllMocks();
+    // mockReset clears the mockImplementationOnce queue, which clearAllMocks does NOT.
+    // Without this, an unused mockImplementationOnce from a failing "happy path" test
+    // can leak into the next test and cause cascading failures.
+    mockSupabase.from.mockReset();
 });
 
 // ─── POST /api/bookings ───────────────────────────────────────────────────────
@@ -120,7 +129,8 @@ describe('POST /api/bookings — createBooking()', () => {
         mockSupabase.from
             .mockImplementationOnce(() => makeSingleBuilder({ data: spot, error: null }))        // spot fetch
             .mockImplementationOnce(() => makeGtBuilder({ data: conflicts, error: null }))       // overlap check
-            .mockImplementationOnce(() => makeSingleBuilder({ data: booking, error: null }));    // insert
+            .mockImplementationOnce(() => makeSingleBuilder({ data: booking, error: null }))     // insert
+            .mockImplementationOnce(() => makeInsertBuilder());                                  // notify provider
     }
 
     test('201 with valid payload — defaults to pending_provider status', async () => {
@@ -228,7 +238,8 @@ describe('POST /api/bookings — createBooking()', () => {
                 capturedOverlapBuilder = makeGtBuilder({ data: [], error: null });
                 return capturedOverlapBuilder;
             })
-            .mockImplementationOnce(() => makeSingleBuilder({ data: PENDING_BOOKING, error: null }));
+            .mockImplementationOnce(() => makeSingleBuilder({ data: PENDING_BOOKING, error: null }))
+            .mockImplementationOnce(() => makeInsertBuilder());
 
         await request(app).post('/api/bookings').send(VALID_BODY);
 
@@ -383,10 +394,13 @@ describe('GET /api/bookings/provider — getProviderBookings()', () => {
 
 describe('PATCH /api/bookings/:id/confirm — confirmBooking()', () => {
 
-    function setupConfirmMocks({ fetchResult, updateResult } = {}) {
+    function setupConfirmMocks({ fetchResult, updateResult, includeNotify = true } = {}) {
         mockSupabase.from
             .mockImplementationOnce(() => makeSingleBuilder(fetchResult))
             .mockImplementationOnce(() => makeSingleBuilder(updateResult));
+        if (includeNotify) {
+            mockSupabase.from.mockImplementationOnce(() => makeInsertBuilder());
+        }
     }
 
     test('200 — pending_provider booking transitions to active', async () => {
@@ -440,8 +454,9 @@ describe('PATCH /api/bookings/:id/confirm — confirmBooking()', () => {
 
     test('500 when update fails', async () => {
         setupConfirmMocks({
-            fetchResult:  { data: PENDING_BOOKING, error: null },
-            updateResult: { data: null, error: { message: 'Update failed' } },
+            fetchResult:   { data: PENDING_BOOKING, error: null },
+            updateResult:  { data: null, error: { message: 'Update failed' } },
+            includeNotify: false,
         });
 
         const res = await request(app).patch('/api/bookings/10/confirm');
@@ -459,10 +474,13 @@ describe('PATCH /api/bookings/:id/confirm — confirmBooking()', () => {
 
 describe('PATCH /api/bookings/:id/reject — rejectBooking()', () => {
 
-    function setupRejectMocks({ fetchResult, updateResult } = {}) {
+    function setupRejectMocks({ fetchResult, updateResult, includeNotify = true } = {}) {
         mockSupabase.from
             .mockImplementationOnce(() => makeSingleBuilder(fetchResult))
             .mockImplementationOnce(() => makeSingleBuilder(updateResult));
+        if (includeNotify) {
+            mockSupabase.from.mockImplementationOnce(() => makeInsertBuilder());
+        }
     }
 
     test('200 — pending_provider booking transitions to cancelled', async () => {
@@ -513,8 +531,9 @@ describe('PATCH /api/bookings/:id/reject — rejectBooking()', () => {
 
     test('500 when update fails', async () => {
         setupRejectMocks({
-            fetchResult:  { data: PENDING_BOOKING, error: null },
-            updateResult: { data: null, error: { message: 'Update failed' } },
+            fetchResult:   { data: PENDING_BOOKING, error: null },
+            updateResult:  { data: null, error: { message: 'Update failed' } },
+            includeNotify: false,
         });
 
         const res = await request(app).patch('/api/bookings/10/reject');
@@ -526,10 +545,13 @@ describe('PATCH /api/bookings/:id/reject — rejectBooking()', () => {
 
 describe('PATCH /api/bookings/:id/cancel — cancelBooking()', () => {
 
-    function setupCancelMocks({ fetchResult, updateResult } = {}) {
+    function setupCancelMocks({ fetchResult, updateResult, includeNotify = true } = {}) {
         mockSupabase.from
             .mockImplementationOnce(() => makeSingleBuilder(fetchResult))
             .mockImplementationOnce(() => makeSingleBuilder(updateResult));
+        if (includeNotify) {
+            mockSupabase.from.mockImplementationOnce(() => makeInsertBuilder());
+        }
     }
 
     test('200 — active booking is cancelled', async () => {
@@ -591,8 +613,9 @@ describe('PATCH /api/bookings/:id/cancel — cancelBooking()', () => {
 
     test('500 when update fails', async () => {
         setupCancelMocks({
-            fetchResult:  { data: ACTIVE_BOOKING, error: null },
-            updateResult: { data: null, error: { message: 'Update failed' } },
+            fetchResult:   { data: ACTIVE_BOOKING, error: null },
+            updateResult:  { data: null, error: { message: 'Update failed' } },
+            includeNotify: false,
         });
 
         const res = await request(app).patch('/api/bookings/10/cancel');
@@ -603,6 +626,153 @@ describe('PATCH /api/bookings/:id/cancel — cancelBooking()', () => {
         verifyToken.mockImplementationOnce((req, res) => res.status(401).json({ error: 'Unauthorized' }));
         const res = await request(app).patch('/api/bookings/10/cancel');
         expect(res.statusCode).toBe(401);
+    });
+});
+
+// ─── Notification pathway tests ───────────────────────────────────────────────
+
+describe('Notification: booking_received — spot owner notified on new booking', () => {
+
+    test('notification is sent to the spot owner (provider_id)', async () => {
+        let capturedInsert;
+        mockSupabase.from
+            .mockImplementationOnce(() => makeSingleBuilder({ data: SPOT, error: null }))
+            .mockImplementationOnce(() => makeGtBuilder({ data: [], error: null }))
+            .mockImplementationOnce(() => makeSingleBuilder({ data: PENDING_BOOKING, error: null }))
+            .mockImplementationOnce(() => {
+                const b = makeInsertBuilder();
+                capturedInsert = b.insert;
+                return b;
+            });
+
+        await request(app).post('/api/bookings').send(VALID_BODY);
+
+        expect(capturedInsert).toHaveBeenCalledTimes(1);
+        const payload = capturedInsert.mock.calls[0][0];
+        expect(payload.user_id).toBe(SPOT.provider_id);
+        expect(payload.type).toBe('booking_received');
+        expect(payload.message).toContain(SPOT.address);
+    });
+
+    test('notification is NOT sent when the booking insert fails', async () => {
+        mockSupabase.from
+            .mockImplementationOnce(() => makeSingleBuilder({ data: SPOT, error: null }))
+            .mockImplementationOnce(() => makeGtBuilder({ data: [], error: null }))
+            .mockImplementationOnce(() => makeSingleBuilder({ data: null, error: { message: 'Insert failed' } }));
+
+        const callsBefore = mockSupabase.from.mock.calls.length;
+        await request(app).post('/api/bookings').send(VALID_BODY);
+        // spot + overlap + booking = 3 calls; notifications would be a 4th
+        expect(mockSupabase.from.mock.calls.length - callsBefore).toBe(3);
+    });
+
+    test('notification is NOT sent when the spot is unavailable', async () => {
+        mockSupabase.from
+            .mockImplementationOnce(() => makeSingleBuilder({ data: { ...SPOT, available: false }, error: null }));
+
+        const callsBefore = mockSupabase.from.mock.calls.length;
+        await request(app).post('/api/bookings').send(VALID_BODY);
+        // route returns 409 after spot fetch; only 1 from() call
+        expect(mockSupabase.from.mock.calls.length - callsBefore).toBe(1);
+    });
+});
+
+describe('Notification: booking_confirmed — customer notified when provider confirms', () => {
+
+    test('notification is sent to the booking user_id', async () => {
+        let capturedInsert;
+        mockSupabase.from
+            .mockImplementationOnce(() => makeSingleBuilder({ data: PENDING_BOOKING, error: null }))
+            .mockImplementationOnce(() => makeSingleBuilder({ data: { ...PENDING_BOOKING, status: 'active' }, error: null }))
+            .mockImplementationOnce(() => {
+                const b = makeInsertBuilder();
+                capturedInsert = b.insert;
+                return b;
+            });
+
+        await request(app).patch('/api/bookings/10/confirm');
+
+        expect(capturedInsert).toHaveBeenCalledTimes(1);
+        const payload = capturedInsert.mock.calls[0][0];
+        expect(payload.user_id).toBe(PENDING_BOOKING.user_id);
+        expect(payload.type).toBe('booking_confirmed');
+        expect(payload.message).toContain(PENDING_BOOKING.parking_spots.address);
+    });
+
+    test('notification is NOT sent when update fails', async () => {
+        mockSupabase.from
+            .mockImplementationOnce(() => makeSingleBuilder({ data: PENDING_BOOKING, error: null }))
+            .mockImplementationOnce(() => makeSingleBuilder({ data: null, error: { message: 'Update failed' } }));
+
+        const callsBefore = mockSupabase.from.mock.calls.length;
+        await request(app).patch('/api/bookings/10/confirm');
+        expect(mockSupabase.from.mock.calls.length - callsBefore).toBe(2);
+    });
+});
+
+describe('Notification: booking_rejected — customer notified when provider rejects', () => {
+
+    test('notification is sent to the booking user_id', async () => {
+        let capturedInsert;
+        mockSupabase.from
+            .mockImplementationOnce(() => makeSingleBuilder({ data: PENDING_BOOKING, error: null }))
+            .mockImplementationOnce(() => makeSingleBuilder({ data: { ...PENDING_BOOKING, status: 'cancelled' }, error: null }))
+            .mockImplementationOnce(() => {
+                const b = makeInsertBuilder();
+                capturedInsert = b.insert;
+                return b;
+            });
+
+        await request(app).patch('/api/bookings/10/reject');
+
+        expect(capturedInsert).toHaveBeenCalledTimes(1);
+        const payload = capturedInsert.mock.calls[0][0];
+        expect(payload.user_id).toBe(PENDING_BOOKING.user_id);
+        expect(payload.type).toBe('booking_rejected');
+        expect(payload.message).toContain(PENDING_BOOKING.parking_spots.address);
+    });
+
+    test('notification is NOT sent when update fails', async () => {
+        mockSupabase.from
+            .mockImplementationOnce(() => makeSingleBuilder({ data: PENDING_BOOKING, error: null }))
+            .mockImplementationOnce(() => makeSingleBuilder({ data: null, error: { message: 'Update failed' } }));
+
+        const callsBefore = mockSupabase.from.mock.calls.length;
+        await request(app).patch('/api/bookings/10/reject');
+        expect(mockSupabase.from.mock.calls.length - callsBefore).toBe(2);
+    });
+});
+
+describe('Notification: booking_cancelled — provider notified when customer cancels', () => {
+
+    test('notification is sent to the spot provider_id', async () => {
+        let capturedInsert;
+        mockSupabase.from
+            .mockImplementationOnce(() => makeSingleBuilder({ data: ACTIVE_BOOKING, error: null }))
+            .mockImplementationOnce(() => makeSingleBuilder({ data: { ...ACTIVE_BOOKING, status: 'cancelled' }, error: null }))
+            .mockImplementationOnce(() => {
+                const b = makeInsertBuilder();
+                capturedInsert = b.insert;
+                return b;
+            });
+
+        await request(app).patch('/api/bookings/10/cancel');
+
+        expect(capturedInsert).toHaveBeenCalledTimes(1);
+        const payload = capturedInsert.mock.calls[0][0];
+        expect(payload.user_id).toBe(ACTIVE_BOOKING.parking_spots.provider_id);
+        expect(payload.type).toBe('booking_cancelled');
+        expect(payload.message).toContain(ACTIVE_BOOKING.parking_spots.address);
+    });
+
+    test('notification is NOT sent when update fails', async () => {
+        mockSupabase.from
+            .mockImplementationOnce(() => makeSingleBuilder({ data: ACTIVE_BOOKING, error: null }))
+            .mockImplementationOnce(() => makeSingleBuilder({ data: null, error: { message: 'Update failed' } }));
+
+        const callsBefore = mockSupabase.from.mock.calls.length;
+        await request(app).patch('/api/bookings/10/cancel');
+        expect(mockSupabase.from.mock.calls.length - callsBefore).toBe(2);
     });
 });
 
