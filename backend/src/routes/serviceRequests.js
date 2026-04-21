@@ -164,6 +164,14 @@ router.patch('/service-requests/:id/accept', verifyToken, async (req, res) => {
         return res.status(500).json({ success: false, error: error.message });
     }
 
+    // Notify the requester their service request was accepted
+    await supabase.from('notifications').insert({
+        user_id:    existing.user_id,
+        type:       'service_accepted',
+        message:    `Your "${existing.service_type}" request was accepted by ${provider_name.trim()}. They'll reach you at ${provider_contact.trim()}.`,
+        request_id: existing.request_id,
+    });
+
     res.json({ success: true, data });
 });
 

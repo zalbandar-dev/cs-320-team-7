@@ -70,8 +70,9 @@ const IN_PROGRESS_REQUEST = { ...ACTIVE_REQUEST, request_id: 202, status: 'in_pr
 beforeEach(() => {
     jest.clearAllMocks();
     mockDB.result = { data: null, error: null };
-    // Re-attach from() implementation (clearAllMocks wipes call counts but not implementations;
-    // re-assigning just to be safe and explicit for readers)
+    // mockReset also clears the mockImplementationOnce queue, which clearAllMocks does NOT.
+    // Prevents leaked mocks from failing "happy path" tests from polluting the next test.
+    mockSupabase.from.mockReset();
     mockSupabase.from.mockImplementation(() => mockDB.make());
 });
 
@@ -436,7 +437,7 @@ describe('PATCH /api/service-requests/:id/accept — acceptRequest()', () => {
     const OPEN_REQUEST = { request_id: 300, status: 'pending', user_id: 99 };
     const ACCEPTED_REQUEST = { ...OPEN_REQUEST, status: 'approved', accepted_by_user_id: 42 };
 
-    function setupAcceptMocks({ fetchResult, updateResult } = {}) {
+    function setupAcceptMocks({ fetchResult, updateResult, notifyResult = { data: null, error: null } } = {}) {
         mockSupabase.from
             .mockImplementationOnce(() => {
                 const b = { select: jest.fn(() => b), eq: jest.fn(() => b), single: jest.fn(() => Promise.resolve(fetchResult)) };
@@ -444,6 +445,10 @@ describe('PATCH /api/service-requests/:id/accept — acceptRequest()', () => {
             })
             .mockImplementationOnce(() => {
                 const b = { update: jest.fn(() => b), eq: jest.fn(() => b), select: jest.fn(() => b), single: jest.fn(() => Promise.resolve(updateResult)) };
+                return b;
+            })
+            .mockImplementationOnce(() => {
+                const b = { insert: jest.fn(() => Promise.resolve(notifyResult)) };
                 return b;
             });
     }
@@ -521,6 +526,62 @@ describe('PATCH /api/service-requests/:id/accept — acceptRequest()', () => {
             .send({ provider_name: 'Jane Wrench', provider_contact: '617-555-0001' });
 
         expect(res.statusCode).toBe(404);
+    });
+
+    describe('Notification: service_accepted — requester notified when job accepted', () => {
+
+        test('notification sent to original requester with provider info', async () => {
+            let capturedInsert = null;
+
+            mockSupabase.from
+                .mockImplementationOnce(() => {
+                    const b = { select: jest.fn(() => b), eq: jest.fn(() => b), single: jest.fn(() => Promise.resolve({ data: OPEN_REQUEST, error: null })) };
+                    return b;
+                })
+                .mockImplementationOnce(() => {
+                    const b = { update: jest.fn(() => b), eq: jest.fn(() => b), select: jest.fn(() => b), single: jest.fn(() => Promise.resolve({ data: ACCEPTED_REQUEST, error: null })) };
+                    return b;
+                })
+                .mockImplementationOnce(() => {
+                    capturedInsert = jest.fn(() => Promise.resolve({ data: null, error: null }));
+                    return { insert: capturedInsert };
+                });
+
+            await request(app)
+                .patch('/api/service-requests/300/accept')
+                .send({ provider_name: 'Jane Wrench', provider_contact: '617-555-0001' });
+
+            expect(capturedInsert).toHaveBeenCalledTimes(1);
+            const payload = capturedInsert.mock.calls[0][0];
+            expect(payload.user_id).toBe(99); // original requester
+            expect(payload.type).toBe('service_accepted');
+            expect(payload.message).toMatch(/Jane Wrench/);
+            expect(payload.message).toMatch(/617-555-0001/);
+        });
+
+        test('notification NOT sent when update fails', async () => {
+            // Only queue fetch + update mocks; the route returns 500 before reaching
+            // notifications, so no 3rd mock is added (avoids leaking into next tests).
+            mockSupabase.from
+                .mockImplementationOnce(() => {
+                    const b = { select: jest.fn(() => b), eq: jest.fn(() => b), single: jest.fn(() => Promise.resolve({ data: OPEN_REQUEST, error: null })) };
+                    return b;
+                })
+                .mockImplementationOnce(() => {
+                    const b = { update: jest.fn(() => b), eq: jest.fn(() => b), select: jest.fn(() => b), single: jest.fn(() => Promise.resolve({ data: null, error: { message: 'DB error' } })) };
+                    return b;
+                });
+
+            const fromCallsBefore = mockSupabase.from.mock.calls.length;
+
+            const res = await request(app)
+                .patch('/api/service-requests/300/accept')
+                .send({ provider_name: 'Jane Wrench', provider_contact: '617-555-0001' });
+
+            expect(res.statusCode).toBe(500);
+            // from() was called exactly twice (fetch + update), not a third time for notifications
+            expect(mockSupabase.from.mock.calls.length - fromCallsBefore).toBe(2);
+        });
     });
 });
 

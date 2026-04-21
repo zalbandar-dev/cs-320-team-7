@@ -165,9 +165,9 @@ export default function Navbar() {
                 )}
               </div>
 
-              <button type="button" className="p-2 hover:bg-slate-50 rounded-full transition-colors">
+              <Link href="/support" className="p-2 hover:bg-slate-50 rounded-full transition-colors" title="Support">
                 <span className="material-symbols-outlined">help_outline</span>
-              </button>
+              </Link>
               <button type="button" onClick={logout} className="p-2 hover:bg-slate-50 rounded-full transition-colors" title="Sign out">
                 <span className="material-symbols-outlined">logout</span>
               </button>

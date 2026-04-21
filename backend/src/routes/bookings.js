@@ -41,7 +41,7 @@ router.post('/bookings', verifyToken, async (req, res) => {
     // Fetch spot — must exist and be available
     const { data: spot, error: spotError } = await supabase
         .from('parking_spots')
-        .select('spot_id, hourly_rate, available')
+        .select('spot_id, hourly_rate, available, provider_id, address')
         .eq('spot_id', spot_id)
         .single();
 
@@ -89,6 +89,13 @@ router.post('/bookings', verifyToken, async (req, res) => {
         console.error('Booking insert error:', bookingError);
         return res.status(500).json({ success: false, error: 'Failed to create booking' });
     }
+
+    // Notify the spot owner a booking request came in
+    await supabase.from('notifications').insert({
+        user_id: spot.provider_id,
+        type:    'booking_received',
+        message: `New booking request for your spot at ${spot.address}. Go to Booking Requests to confirm or reject it.`,
+    });
 
     return res.status(201).json({ success: true, data: booking });
 });
@@ -160,7 +167,7 @@ router.patch('/bookings/:id/confirm', verifyToken, async (req, res) => {
     // Fetch booking + spot to verify ownership
     const { data: booking, error: fetchError } = await supabase
         .from('bookings')
-        .select('booking_id, status, spot_id, parking_spots(provider_id)')
+        .select('booking_id, status, user_id, spot_id, parking_spots(provider_id, address)')
         .eq('booking_id', bookingId)
         .single();
 
@@ -187,6 +194,13 @@ router.patch('/bookings/:id/confirm', verifyToken, async (req, res) => {
         return res.status(500).json({ success: false, error: 'Failed to confirm booking' });
     }
 
+    // Notify the customer their booking was confirmed
+    await supabase.from('notifications').insert({
+        user_id: booking.user_id,
+        type:    'booking_confirmed',
+        message: `Your booking at ${booking.parking_spots.address} has been confirmed! You're all set.`,
+    });
+
     return res.json({ success: true, data: updated });
 });
 
@@ -202,7 +216,7 @@ router.patch('/bookings/:id/reject', verifyToken, async (req, res) => {
 
     const { data: booking, error: fetchError } = await supabase
         .from('bookings')
-        .select('booking_id, status, spot_id, parking_spots(provider_id)')
+        .select('booking_id, status, user_id, spot_id, parking_spots(provider_id, address)')
         .eq('booking_id', bookingId)
         .single();
 
@@ -229,6 +243,13 @@ router.patch('/bookings/:id/reject', verifyToken, async (req, res) => {
         return res.status(500).json({ success: false, error: 'Failed to reject booking' });
     }
 
+    // Notify the customer their booking was rejected
+    await supabase.from('notifications').insert({
+        user_id: booking.user_id,
+        type:    'booking_rejected',
+        message: `Your booking request for ${booking.parking_spots.address} was declined by the owner. Try a different spot or time.`,
+    });
+
     return res.json({ success: true, data: updated });
 });
 
@@ -244,7 +265,7 @@ router.patch('/bookings/:id/cancel', verifyToken, async (req, res) => {
 
     const { data: booking, error: fetchError } = await supabase
         .from('bookings')
-        .select('booking_id, status, user_id')
+        .select('booking_id, status, user_id, parking_spots(provider_id, address)')
         .eq('booking_id', bookingId)
         .single();
 
@@ -269,6 +290,15 @@ router.patch('/bookings/:id/cancel', verifyToken, async (req, res) => {
 
     if (updateError) {
         return res.status(500).json({ success: false, error: 'Failed to cancel booking' });
+    }
+
+    // Notify the spot owner the customer cancelled
+    if (booking.parking_spots) {
+        await supabase.from('notifications').insert({
+            user_id: booking.parking_spots.provider_id,
+            type:    'booking_cancelled',
+            message: `A customer cancelled their booking at ${booking.parking_spots.address}. That time slot is now available again.`,
+        });
     }
 
     return res.json({ success: true, data: updated });
