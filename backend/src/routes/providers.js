@@ -25,12 +25,12 @@ router.get('/providers/spots', verifyToken, async (req, res) => {
 // Add a new parking spot
 router.post('/providers/spots', verifyToken, async (req, res) => {
     const provider_id = req.user.sub; // taken from verified JWT, not request body
-    const { address, zip_code, hourly_rate, spot_type, description, latitude, longitude } = req.body;
+    const { address, zip_code, hourly_rate, spot_type, description, latitude, longitude, image } = req.body;
 
-    if (!address || !zip_code || !hourly_rate || !spot_type) {
+    if (!address || !zip_code || !hourly_rate || !spot_type || !image) {
         return res.status(400).json({
             success: false,
-            error: 'address, zip_code, hourly_rate, and spot_type are required',
+            error: 'image, address, zip_code, hourly_rate, and spot_type are required',
         });
     }
 
@@ -38,7 +38,7 @@ router.post('/providers/spots', verifyToken, async (req, res) => {
 
     const { data, error } = await supabase
         .from('parking_spots')
-        .insert([{ address, zip_code, hourly_rate, spot_type, description, provider_id, latitude, longitude, available: true }])
+        .insert([{ address, zip_code, hourly_rate, spot_type, description, provider_id, latitude, longitude, available: true, image: image}])
         .select();
 
     if (error) {
