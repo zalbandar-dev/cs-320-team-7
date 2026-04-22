@@ -5,7 +5,7 @@ export interface Booking {
   start_time: string;
   end_time: string;
   total_price: number;
-  status: "pending_provider" | "active" | "completed" | "cancelled";
+  status: "pending_provider" | "active" | "completed" | "cancelled" | "expired";
   vehicle_make: string;
   vehicle_model: string;
   license_plate: string;
