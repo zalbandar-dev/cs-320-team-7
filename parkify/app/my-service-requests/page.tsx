@@ -5,6 +5,7 @@ import Navbar from "@/app/components/Navbar";
 import Sidebar from "@/app/components/Sidebar";
 import ServiceRequestModal from "@/app/components/ServiceRequestModal";
 import { getAuthHeaders } from "@/app/lib/auth";
+import Toast from "@/app/components/Toast";
 
 interface ServiceRequest {
   request_id: number;
@@ -79,6 +80,7 @@ export default function MyServiceRequestsPage() {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [toast, setToast]         = useState<string | null>(null);
 
   const fetchMyRequests = useCallback(async () => {
     setLoading(true);
@@ -127,6 +129,7 @@ export default function MyServiceRequestsPage() {
     });
     if (res.ok) {
       setMyRequests(prev => prev.map(r => r.request_id === id ? { ...r, status: "rejected" } : r));
+      setToast("Request cancelled.");
     }
   }
 
@@ -137,6 +140,7 @@ export default function MyServiceRequestsPage() {
     });
     if (res.ok) {
       setAcceptedJobs(prev => prev.filter(r => r.request_id !== id));
+      setToast("Job unaccepted — it's open again.");
     }
   }
 
@@ -445,9 +449,11 @@ export default function MyServiceRequestsPage() {
       {showModal && (
         <ServiceRequestModal
           onClose={() => setShowModal(false)}
-          onSubmitted={fetchMyRequests}
+          onSubmitted={() => { fetchMyRequests(); setToast("Service request submitted!"); }}
         />
       )}
+
+      {toast && <Toast message={toast} onHide={() => setToast(null)} />}
     </div>
   );
 }

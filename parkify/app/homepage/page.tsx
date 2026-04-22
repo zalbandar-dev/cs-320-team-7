@@ -47,6 +47,8 @@ export default function ListingsPage() {
   const [zip, setZip] = useState("");
   const [activeZip, setActiveZip] = useState("");
   const [reviews, setReviews] = useState<Record<number, SpotReview>>({});
+  const [maxPrice, setMaxPrice] = useState<number>(50);
+  const [spotTypeFilter, setSpotTypeFilter] = useState<string>("all");
 
   const fetchReviewsForSpots = async (spotList: ParkingSpot[]) => {
     const reviewMap: Record<number, SpotReview> = {};
@@ -105,6 +107,12 @@ export default function ListingsPage() {
   const getPricePerDay = (pricePerHour: number) => {
     return pricePerHour * 24 * DAILY_DISCOUNT_RATE;
   };
+
+  const filteredSpots = spots.filter((s) => {
+    if (s.hourly_rate > maxPrice) return false;
+    if (spotTypeFilter !== "all" && s.spot_type !== spotTypeFilter) return false;
+    return true;
+  });
 
   return (
     <div className="bg-background text-on-background min-h-screen">
@@ -175,11 +183,57 @@ export default function ListingsPage() {
                 </span>
               </div>
             )}
+
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-5 mt-5 pt-5 border-t border-slate-100">
+              {/* Spot type */}
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Type</label>
+                <select
+                  title="Spot type"
+                  value={spotTypeFilter}
+                  onChange={(e) => setSpotTypeFilter(e.target.value)}
+                  className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-on-surface bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="all">All types</option>
+                  {["compact", "standard", "large", "motorcycle", "rv"].map((t) => (
+                    <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Price range */}
+              <div className="flex items-center gap-3">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                  Max price
+                </label>
+                <input
+                  type="range"
+                  min={1}
+                  max={50}
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(Number(e.target.value))}
+                  className="w-32 accent-blue-600"
+                />
+                <span className="text-sm font-bold text-primary w-16">${maxPrice}/hr</span>
+              </div>
+
+              {(spotTypeFilter !== "all" || maxPrice < 50) && (
+                <button
+                  type="button"
+                  onClick={() => { setSpotTypeFilter("all"); setMaxPrice(50); }}
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-700 flex items-center gap-1"
+                >
+                  <span className="material-symbols-outlined text-sm">close</span>
+                  Clear filters
+                </button>
+              )}
+            </div>
           </header>
 
           {!loading && (
             <p className="text-sm text-on-surface-variant mb-6">
-              {spots.length} spot{spots.length !== 1 ? "s" : ""} found
+              {filteredSpots.length} spot{filteredSpots.length !== 1 ? "s" : ""} found
             </p>
           )}
 
@@ -199,7 +253,7 @@ export default function ListingsPage() {
                 </div>
               ))}
             </div>
-          ) : spots.length === 0 ? (
+          ) : filteredSpots.length === 0 ? (
             <div className="text-center py-24 text-on-surface-variant">
               <span className="material-symbols-outlined text-[64px] mb-4 block opacity-30">
                 local_parking
@@ -208,12 +262,12 @@ export default function ListingsPage() {
                 No spots found
               </p>
               <p className="text-sm mt-1">
-                Try a different zip code or clear your search.
+                Try a different zip code, raise the price limit, or change the spot type.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {spots.map((spot) => {
+              {filteredSpots.map((spot) => {
                 const review = reviews[spot.spot_id];
                 const hasReviews = review && review.count > 0;
                 const imgSrc = spot.image?.trim() || PLACEHOLDER_IMAGE;

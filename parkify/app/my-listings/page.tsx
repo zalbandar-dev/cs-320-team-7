@@ -7,6 +7,7 @@ import Navbar from "@/app/components/Navbar";
 import Sidebar from "@/app/components/Sidebar";
 import { ParkingSpot } from "@/app/lib/types";
 import { getAuthHeaders } from "@/app/lib/auth";
+import Toast from "@/app/components/Toast";
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800&q=80";
@@ -73,6 +74,7 @@ export default function MyListingsPage() {
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [toast, setToast] = useState<string | null>(null);
 
   const [suggestions, setSuggestions] = useState<GeoapifyResult[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -182,6 +184,7 @@ export default function MyListingsPage() {
       setSpots((prev) => [...prev, data.data]);
       setForm(emptyForm);
       setShowModal(false);
+      setToast("Listing added successfully!");
     } else {
       setFormError(data.error ?? "Failed to add spot.");
     }
@@ -227,6 +230,20 @@ export default function MyListingsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          ) : spots.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-28 text-center">
+              <span className="material-symbols-outlined text-[72px] text-slate-300 mb-4">garage</span>
+              <p className="text-xl font-bold text-on-surface mb-2">No listings yet</p>
+              <p className="text-on-surface-variant text-sm mb-6">Add your first parking spot to start earning.</p>
+              <button
+                type="button"
+                onClick={() => setShowModal(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-primary text-on-primary rounded-xl font-bold shadow-md hover:scale-[1.02] active:scale-95 transition-all"
+              >
+                <span className="material-symbols-outlined">add</span>
+                Add Your First Spot
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -317,6 +334,8 @@ export default function MyListingsPage() {
           )}
         </div>
       </main>
+
+      {toast && <Toast message={toast} onHide={() => setToast(null)} />}
 
       {/* Add Spot Modal */}
       {showModal && (
