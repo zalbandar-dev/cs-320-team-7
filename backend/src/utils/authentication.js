@@ -264,6 +264,8 @@ module.exports = {
     removeJWT,
     deleteUser,
     redactSensitiveData,
-    getPublicProfile
+    getPublicProfile,
+    generateResetToken,
+    hashResetToken
 };
 

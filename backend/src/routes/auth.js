@@ -6,7 +6,13 @@ const {
     validateLogin,
     storeUser,
     generateJWT,
-    getUserInfo
+    getUserInfo,
+    removeJWT,
+    deleteUser,
+    redactSensitiveData,
+    getPublicProfile,
+    generateResetToken,
+    hashResetToken
 } = require('../utils/authentication.js');
 const verifyToken = require('../utils/verifyToken.js');
 
@@ -78,6 +84,22 @@ router.post('/login', async (req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 });
+
+// POST /api/auth/logout
+router.post('/logout', verifyToken, async (req, res) => {
+    const token = req.headers['authorization']?.split(' ')[1]; 
+    
+    if (!token) return res.status(400).json({ error: "No token provided" });
+
+    const result = await removeJWT(token);
+
+    if (result.success) {
+        res.status(200).json({ message: "Logout successful" });
+    } else {
+        res.status(500).json({ error: "Logout failed: " + result.error });
+    }
+});
+
 // GET /api/user → returns the logged-in user's info (requires valid JWT)
 router.get('/user', verifyToken, async (req, res) => {
     try {
