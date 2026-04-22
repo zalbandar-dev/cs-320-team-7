@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Navbar from "@/app/components/Navbar";
 import Sidebar from "@/app/components/Sidebar";
 import { getAuthHeaders } from "@/app/lib/auth";
+import Toast from "@/app/components/Toast";
 
 const empty = {
   first_name: "",
@@ -20,6 +21,7 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true);
   const [listingCount, setListingCount] = useState<number>(0);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/mySpots", { headers: getAuthHeaders() })
@@ -69,6 +71,7 @@ export default function AccountPage() {
         return;
       }
       setSaved(true);
+      setToast("Profile saved successfully!");
       setTimeout(() => setSaved(false), 2000);
     } catch {
       setSaveError("Network error — could not save changes");
@@ -258,6 +261,8 @@ export default function AccountPage() {
           </div>
         </div>
       </main>
+
+      {toast && <Toast message={toast} onHide={() => setToast(null)} />}
 
       {/* Footer */}
       <footer className="md:ml-64 w-auto py-12 border-t mt-auto bg-white border-slate-100">

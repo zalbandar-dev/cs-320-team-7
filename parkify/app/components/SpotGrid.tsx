@@ -98,7 +98,7 @@ export default function SpotGrid({ spots, loading }: SpotGridProps) {
       }}
     >
       {spots.map((spot) => (
-        <SpotCard key={spot.id} spot={spot} />
+        <SpotCard key={spot.spot_id} spot={spot} />
       ))}
     </div>
   );

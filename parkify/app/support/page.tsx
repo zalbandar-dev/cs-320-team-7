@@ -22,6 +22,29 @@ const faqs = [
   },
 ];
 
+const vehicleSizeFaqs = [
+  {
+    q: 'What is a "Compact" spot?',
+    a: "Compact spots are designed for small cars such as sedans, hatchbacks, and coupes. Typical dimensions: up to 16 ft long × 8 ft wide. Examples: Honda Civic, Toyota Corolla, Mazda3.",
+  },
+  {
+    q: 'What is a "Standard" spot?',
+    a: "Standard spots fit most everyday passenger vehicles including mid-size sedans, wagons, and smaller crossovers. Typical dimensions: 16–18 ft long × 8–9 ft wide. Examples: Honda Accord, Toyota Camry, Subaru Outback.",
+  },
+  {
+    q: 'What is a "Large" spot?',
+    a: "Large spots accommodate full-size SUVs, pickup trucks, minivans, and larger crossovers. Typical dimensions: 18–22 ft long × 9–10 ft wide. Examples: Ford F-150, Chevy Suburban, Toyota Sienna.",
+  },
+  {
+    q: 'What is a "Motorcycle" spot?',
+    a: "Motorcycle spots are narrow stalls reserved for two-wheeled vehicles. Typical dimensions: 4 ft wide × 8 ft long. Not suitable for any four-wheeled vehicle.",
+  },
+  {
+    q: 'What is an "RV" spot?',
+    a: "RV spots are extra-long pull-through or back-in stalls for recreational vehicles, camper vans, and box trucks. Typical dimensions: 12–14 ft wide × 30–45 ft long. Always confirm the spot's listed dimensions before booking.",
+  },
+];
+
 export default function SupportPage() {
   return (
     <div className="bg-background text-on-background min-h-screen flex flex-col">
@@ -92,12 +115,30 @@ export default function SupportPage() {
           </div>
 
           {/* FAQ */}
-          <section className="bg-surface-container-lowest rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+          <section className="bg-surface-container-lowest rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-8">
             <div className="px-8 py-6 bg-surface-container-low border-b border-slate-100">
               <h3 className="text-xl font-bold text-on-surface font-headline">Frequently Asked Questions</h3>
             </div>
             <ul className="divide-y divide-slate-100">
               {faqs.map((faq) => (
+                <li key={faq.q} className="px-8 py-6">
+                  <p className="font-bold text-on-surface mb-1">{faq.q}</p>
+                  <p className="text-on-surface-variant text-sm leading-relaxed">{faq.a}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* Vehicle sizing */}
+          <section className="bg-surface-container-lowest rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="px-8 py-6 bg-surface-container-low border-b border-slate-100">
+              <h3 className="text-xl font-bold text-on-surface font-headline">Vehicle &amp; Spot Size Guide</h3>
+              <p className="text-sm text-on-surface-variant mt-1">
+                Not sure which spot type fits your vehicle? Use the guide below.
+              </p>
+            </div>
+            <ul className="divide-y divide-slate-100">
+              {vehicleSizeFaqs.map((faq) => (
                 <li key={faq.q} className="px-8 py-6">
                   <p className="font-bold text-on-surface mb-1">{faq.q}</p>
                   <p className="text-on-surface-variant text-sm leading-relaxed">{faq.a}</p>
