@@ -126,14 +126,17 @@ async function storeUser(userData) {
     return new status(true, "");
 }
 
-async function generateJWT(userID, userId) {
+async function generateJWT(user) {
     const secret = process.env.JWT_SECRET;
+    const crypto = require('crypto');
 
+    // We pull the unique ID and username from the object you passed in
+    // Note: If your DB returns 'user_id', use user.user_id || user.id
     const payload = {
-        sub: userId,     // integer user_id — for DB foreign-key lookups (provider_id, user_id FKs)
-        username: userID,
+        sub: user.id || user.user_id, 
+        username: user.username,
         iat: Math.floor(Date.now() / 1000),
-        jti: crypto.randomBytes(16).toString('hex')
+        jti: crypto.randomBytes(16).toString('hex') // Unique ID for blacklisting
     };
 
     return jwt.sign(payload, secret, { expiresIn: '24h' });
@@ -157,24 +160,34 @@ async function removeJWT(token) {
     const secret = process.env.JWT_SECRET;
 
     try {
-        const decoded = jwt.verify(token, secret); //Get payload
+        const decoded = jwt.verify(token, secret);
+
+        // Vibe check: Ensure we actually have the ID and the JTI
+        if (!decoded.jti || !decoded.sub) {
+            throw new Error("Token missing JTI or SUB claims");
+        }
 
         const { error } = await supabase
             .from('jwt_blacklist')
             .insert([
                 {
                     token: decoded.jti,
-                    user_id: decoded.sub,
-                    expires_at: new Date(decoded.exp * 1000).toISOString(),
+                    user_id: decoded.sub, // Ensure this column name matches your Supabase exactly
+                    // Fallback to 24h from now if exp is somehow missing
+                    expires_at: decoded.exp 
+                        ? new Date(decoded.exp * 1000).toISOString() 
+                        : new Date(Date.now() + 86400000).toISOString(),
                     blacklisted_at: new Date().toISOString()
                 }
             ]);
 
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase Insert Error:", error.message);
+            throw error;
+        }
 
         return { success: true };
     } catch (err) {
-        console.error("Blacklisting failed:", err.message);
         return { success: false, error: err.message };
     }
 }
