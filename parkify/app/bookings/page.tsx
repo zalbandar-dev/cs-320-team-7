@@ -6,6 +6,7 @@ import { Booking } from "@/app/lib/types";
 import { getAuthHeaders } from "@/app/lib/auth";
 import Sidebar from "@/app/components/Sidebar";
 import Navbar from "@/app/components/Navbar";
+import Toast from "@/app/components/Toast";
 
 type Tab = "current" | "past";
 
@@ -291,6 +292,7 @@ export default function BookingsPage() {
   const [tab, setTab] = useState<Tab>("current");
   const [reviewedSpots, setReviewedSpots] = useState<Set<number>>(new Set());
   const [reviewModal, setReviewModal] = useState<Booking | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     fetchBookings();
@@ -349,6 +351,7 @@ export default function BookingsPage() {
             b.booking_id === bookingId ? { ...b, status: "cancelled" } : b
           )
         );
+        setToast("Booking cancelled successfully.");
       } else {
         setError(data.error ?? "Failed to cancel.");
       }
@@ -453,20 +456,38 @@ export default function BookingsPage() {
             </div>
           )}
 
-          {/* ── Loading ── */}
+          {/* ── Loading Skeletons ── */}
           {loading && (
-            <div style={{ display: "flex", justifyContent: "center", padding: "60px" }}>
-              <div
-                style={{
-                  width: "36px",
-                  height: "36px",
-                  border: "3px solid #e5e7eb",
-                  borderTopColor: "#2563eb",
-                  borderRadius: "50%",
-                  animation: "spin 0.8s linear infinite",
-                }}
-              />
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    background: "white",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "14px",
+                    padding: "20px 24px",
+                    animation: "pulse 1.5s ease-in-out infinite",
+                  }}
+                >
+                  <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }`}</style>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
+                    <div>
+                      <div style={{ height: "18px", width: "200px", background: "#e5e7eb", borderRadius: "6px", marginBottom: "8px" }} />
+                      <div style={{ height: "13px", width: "120px", background: "#e5e7eb", borderRadius: "6px" }} />
+                    </div>
+                    <div style={{ height: "26px", width: "90px", background: "#e5e7eb", borderRadius: "20px" }} />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", padding: "14px 0", borderTop: "1px solid #f3f4f6" }}>
+                    {[1, 2, 3].map((j) => (
+                      <div key={j}>
+                        <div style={{ height: "10px", width: "40px", background: "#e5e7eb", borderRadius: "4px", marginBottom: "6px" }} />
+                        <div style={{ height: "13px", width: "80px", background: "#e5e7eb", borderRadius: "4px" }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -780,9 +801,11 @@ export default function BookingsPage() {
         <ReviewModal
           booking={reviewModal}
           onClose={() => setReviewModal(null)}
-          onSubmitted={handleReviewSubmitted}
+          onSubmitted={(spotId) => { handleReviewSubmitted(spotId); setToast("Review submitted!"); }}
         />
       )}
+
+      {toast && <Toast message={toast} onHide={() => setToast(null)} />}
     </div>
   );
 }
