@@ -100,6 +100,37 @@ router.get('/user', verifyToken, async (req, res) => {
     }
 });
 
+// PATCH /api/user → update the logged-in user's editable profile fields
+router.patch('/user', verifyToken, async (req, res) => {
+    const supabase = req.app.get('supabase');
+    const userId = req.user.sub;
+
+    const { first_name, last_name, email, phone } = req.body;
+
+    if (!first_name && !last_name && !email && !phone) {
+        return res.status(400).json({ error: 'No fields provided to update' });
+    }
+
+    const updates = {};
+    if (first_name) updates.first_name = first_name.trim();
+    if (last_name)  updates.last_name  = last_name.trim();
+    if (email)      updates.email      = email.trim();
+    if (phone)      updates.phone      = phone.trim();
+
+    const { data, error } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('user_id', userId)
+        .select('username, first_name, last_name, email, phone, role')
+        .single();
+
+    if (error) {
+        return res.status(500).json({ error: 'Failed to update profile: ' + error.message });
+    }
+
+    res.json({ success: true, data });
+});
+
 // For future releases
 // POST   /api/auth/logout     → removeJWT()
 // POST   /api/auth/reset-password → generateResetToken(), hashResetToken(), sendResetLink()

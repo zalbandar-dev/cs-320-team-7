@@ -19,6 +19,7 @@ export default function AccountPage() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [listingCount, setListingCount] = useState<number>(0);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/mySpots", { headers: getAuthHeaders() })
@@ -49,9 +50,29 @@ export default function AccountPage() {
     setSaved(false);
   };
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    setSaveError(null);
+    try {
+      const res = await fetch("http://localhost:3001/api/user", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({
+          first_name: form.first_name,
+          last_name:  form.last_name,
+          email:      form.email,
+          phone:      form.phone,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setSaveError(json.error ?? "Failed to save");
+        return;
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      setSaveError("Network error — could not save changes");
+    }
   };
 
   if (loading) {
@@ -182,8 +203,11 @@ export default function AccountPage() {
                     </select>
                   </div>
                 </div>
-                <div className="px-8 py-6 bg-surface-container-lowest flex justify-end gap-4 border-t border-slate-100">
-                  <button type="button" onClick={() => { setForm(empty); setSaved(false); }}
+                <div className="px-8 py-6 bg-surface-container-lowest flex items-center justify-end gap-4 border-t border-slate-100">
+                  {saveError && (
+                    <p className="text-sm text-red-600 mr-auto">{saveError}</p>
+                  )}
+                  <button type="button" onClick={() => { setForm(empty); setSaved(false); setSaveError(null); }}
                     className="px-6 py-2.5 rounded-full font-bold text-on-surface-variant hover:bg-surface-container transition-colors">
                     Discard
                   </button>

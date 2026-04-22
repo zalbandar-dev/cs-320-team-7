@@ -5,10 +5,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { href: "/homepage",            label: "Listings",             icon: "dashboard"   },
-  { href: "/my-listings",         label: "My Listings",          icon: "garage"      },
-  { href: "/service-requests",    label: "Service Requests",     icon: "handyman"    },
-  { href: "/my-service-requests", label: "My Service Requests",  icon: "engineering" },
+  { href: "/homepage",            label: "Listings",             icon: "dashboard"      },
+  { href: "/bookings",            label: "My Bookings",          icon: "local_parking"  },
+  { href: "/provider-bookings",   label: "Booking Requests",     icon: "event_available"},
+  { href: "/my-listings",         label: "My Listings",          icon: "garage"         },
+  { href: "/service-requests",    label: "Service Requests",     icon: "handyman"       },
+  { href: "/my-service-requests", label: "My Service Requests",  icon: "engineering"    },
 ];
 
 export default function Sidebar() {
@@ -48,11 +50,10 @@ export default function Sidebar() {
             <span className="material-symbols-outlined">person</span>
             <span>Account</span>
           </Link>
-          <button type="button"
-            className="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all text-sm font-medium w-full text-left">
+          <Link href="/support" className={linkClass("/support")}>
             <span className="material-symbols-outlined">headset_mic</span>
             <span>Support</span>
-          </button>
+          </Link>
           <button type="button" onClick={logout}
             className="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all text-sm font-medium w-full text-left">
             <span className="material-symbols-outlined">logout</span>
