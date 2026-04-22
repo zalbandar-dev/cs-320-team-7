@@ -6,7 +6,13 @@ const {
     validateLogin,
     storeUser,
     generateJWT,
-    getUserInfo
+    getUserInfo,
+    removeJWT,
+    deleteUser,
+    redactSensitiveData,
+    getPublicProfile,
+    generateResetToken,
+    hashResetToken
 } = require('../utils/authentication.js');
 const verifyToken = require('../utils/verifyToken.js');
 
@@ -58,26 +64,53 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: loginStatus.message });
         }
 
-        // 2. Fetch user details for the payload
+        // 2. Fetch user (This returns the userData class instance)
         const user = await getUserInfo(username);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
         
-        // 3. Issue the token
-        const token = await generateJWT(user.username, user.id);
+        // 3. Issue the token 
+        // FIX: Pass the 'user' object instance so generateJWT can access user.id
+        const token = await generateJWT(user);
 
+        // 4. Send response
         res.status(200).json({
             message: "Login successful",
-            token,
+            accessToken: token, // Changed to accessToken for frontend compatibility
             user: {
                 username: user.username,
-                firstName: user.firstName,
+                firstName: user.firstName, // Matches your userData class property
                 role: user.role
             }
         });
+
     } catch (err) {
         console.error("Login Error:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 });
+
+// POST /api/auth/logout
+// Remove verifyToken temporarily to see if the request hits the handler
+router.post('/logout', async (req, res) => {
+    const authHeader = req.get('authorization');
+    const token = authHeader?.split(' ')[1];
+    
+    if (!token) return res.status(400).json({ error: "No token provided" });
+
+    // Pass the token to the blacklisting function
+    const result = await removeJWT(token);
+
+    if (result.success) {
+        res.status(200).json({ message: "Logout successful" });
+    } else {
+        // Log the exact error from Supabase to your terminal
+        console.error("Supabase Blacklist Error:", result.error);
+        res.status(500).json({ error: "Logout failed at database level" });
+    }
+});
+
 // GET /api/user → returns the logged-in user's info (requires valid JWT)
 router.get('/user', verifyToken, async (req, res) => {
     try {
@@ -131,8 +164,21 @@ router.patch('/user', verifyToken, async (req, res) => {
     res.json({ success: true, data });
 });
 
-// For future releases
-// POST   /api/auth/logout     → removeJWT()
-// POST   /api/auth/reset-password → generateResetToken(), hashResetToken(), sendResetLink()
+router.delete('/user', verifyToken, async (req, res) => {
+    try {
+        // verifyToken attaches the decoded token to req.user
+        // deleteUser expects the username to find the row
+        const result = await deleteUser(req.user.username);
+
+        if (result.flag) {
+            res.status(200).json({ message: result.message });
+        } else {
+            res.status(500).json({ error: result.message });
+        }
+    } catch (err) {
+        console.error("Deactivation Error:", err);
+        res.status(500).json({ error: "Internal server error during deactivation" });
+    }
+});
 
 module.exports = router;
