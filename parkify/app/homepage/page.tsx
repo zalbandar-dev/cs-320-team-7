@@ -49,6 +49,9 @@ export default function ListingsPage() {
   const [reviews, setReviews] = useState<Record<number, SpotReview>>({});
   const [maxPrice, setMaxPrice] = useState<number>(50);
   const [spotTypeFilter, setSpotTypeFilter] = useState<string>("all");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [activeWindow, setActiveWindow] = useState<{ start: string; end: string } | null>(null);
 
   const fetchReviewsForSpots = async (spotList: ParkingSpot[]) => {
     const reviewMap: Record<number, SpotReview> = {};
@@ -68,13 +71,18 @@ export default function ListingsPage() {
     setReviews(reviewMap);
   };
 
-  const fetchSpots = async (zipCode?: string) => {
+  const fetchSpots = async (zipCode?: string, window?: { start: string; end: string } | null) => {
     setLoading(true);
     try {
+      const params = new URLSearchParams();
+      if (window?.start) params.set("start_time", window.start);
+      if (window?.end) params.set("end_time", window.end);
+      const qs = params.toString() ? `&${params.toString()}` : "";
+
       const url =
         zipCode && zipCode.length > 0
-          ? `/api/listSpotsByZip?zip=${zipCode}`
-          : `/api/listAvailableSpots`;
+          ? `/api/listSpotsByZip?zip=${zipCode}${qs}`
+          : `/api/listAvailableSpots${qs ? `?${params.toString()}` : ""}`;
       const res = await fetch(url);
       const data = await res.json();
       const Data = data.data;
@@ -94,13 +102,21 @@ export default function ListingsPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    const window =
+      startTime && endTime && new Date(endTime) > new Date(startTime)
+        ? { start: new Date(startTime).toISOString(), end: new Date(endTime).toISOString() }
+        : null;
     setActiveZip(zip.trim());
-    fetchSpots(zip.trim());
+    setActiveWindow(window);
+    fetchSpots(zip.trim(), window);
   };
 
   const clearSearch = () => {
     setZip("");
     setActiveZip("");
+    setStartTime("");
+    setEndTime("");
+    setActiveWindow(null);
     fetchSpots();
   };
 
@@ -131,37 +147,86 @@ export default function ListingsPage() {
 
             <form
               onSubmit={handleSearch}
-              className="flex items-center gap-3 max-w-lg"
+              className="flex flex-col gap-3 max-w-2xl"
             >
-              <div className="flex flex-1 items-center bg-surface-container-lowest border border-slate-200 rounded-xl overflow-hidden shadow-sm focus-within:border-primary transition-colors">
-                <span className="material-symbols-outlined text-slate-400 pl-4">
-                  search
-                </span>
-                <input
-                  type="text"
-                  placeholder="Search by zip code..."
-                  value={zip}
-                  onChange={(e) => setZip(e.target.value)}
-                  className="flex-1 px-3 py-3 bg-transparent outline-none text-sm text-primary placeholder:text-slate-400"
-                />
-                {activeZip && (
+              <div className="flex items-center gap-3">
+                <div className="flex flex-1 items-center bg-surface-container-lowest border border-slate-200 rounded-xl overflow-hidden shadow-sm focus-within:border-primary transition-colors">
+                  <span className="material-symbols-outlined text-slate-400 pl-4">
+                    search
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Search by zip code..."
+                    value={zip}
+                    onChange={(e) => setZip(e.target.value)}
+                    className="flex-1 px-3 py-3 bg-transparent outline-none text-sm text-primary placeholder:text-slate-400"
+                  />
+                  {activeZip && (
+                    <button
+                      type="button"
+                      onClick={clearSearch}
+                      className="px-3 text-slate-400 hover:text-slate-600 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-sm">
+                        close
+                      </span>
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-primary text-on-primary rounded-xl font-semibold text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-md"
+                >
+                  Search
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex flex-1 flex-col">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">
+                    From
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={startTime}
+                    min={new Date().toISOString().slice(0, 16)}
+                    onChange={(e) => {
+                      setStartTime(e.target.value);
+                      if (endTime && new Date(endTime) <= new Date(e.target.value)) {
+                        setEndTime("");
+                      }
+                    }}
+                    className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-on-surface bg-surface-container-lowest outline-none focus:border-primary transition-colors"
+                  />
+                </div>
+                <div className="flex flex-1 flex-col">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">
+                    To
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={endTime}
+                    min={startTime || new Date().toISOString().slice(0, 16)}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-on-surface bg-surface-container-lowest outline-none focus:border-primary transition-colors"
+                  />
+                </div>
+                {(startTime || endTime) && (
                   <button
                     type="button"
-                    onClick={clearSearch}
-                    className="px-3 text-slate-400 hover:text-slate-600 transition-colors"
+                    onClick={() => { setStartTime(""); setEndTime(""); }}
+                    className="mt-5 text-xs font-semibold text-slate-400 hover:text-slate-600 flex items-center gap-1"
                   >
-                    <span className="material-symbols-outlined text-sm">
-                      close
-                    </span>
+                    <span className="material-symbols-outlined text-sm">close</span>
+                    Clear dates
                   </button>
                 )}
               </div>
-              <button
-                type="submit"
-                className="px-6 py-3 bg-primary text-on-primary rounded-xl font-semibold text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-md"
-              >
-                Search
-              </button>
+              {activeWindow && (
+                <p className="text-xs text-on-surface-variant">
+                  Showing spots available {new Date(activeWindow.start).toLocaleString()} → {new Date(activeWindow.end).toLocaleString()}
+                </p>
+              )}
             </form>
 
             {activeZip && (

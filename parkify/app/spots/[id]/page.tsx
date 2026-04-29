@@ -91,6 +91,9 @@ export default function SpotDetailPage() {
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
+  const [bookedSlots, setBookedSlots] = useState<
+    { booking_id: number; start_time: string; end_time: string }[]
+  >([]);
   const [booking, setBooking] = useState(false);
   const [bookingError, setBookingError] = useState("");
   const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -124,8 +127,19 @@ export default function SpotDetailPage() {
       }
     };
 
+    const fetchBookedSlots = async () => {
+      try {
+        const res = await fetch(`/api/spotBookedSlots/${params.id}`);
+        const data = await res.json();
+        if (data.success) setBookedSlots(data.data);
+      } catch {
+        // silently ignore
+      }
+    };
+
     fetchSpot();
     fetchReviews();
+    fetchBookedSlots();
 
     const now = new Date();
     now.setMinutes(0, 0, 0);
@@ -665,6 +679,43 @@ export default function SpotDetailPage() {
                       />
                     </div>
                   </div>
+
+                  {bookedSlots.length > 0 && (
+                    <div
+                      style={{
+                        background: "#fef9ec",
+                        border: "1px solid #fde68a",
+                        borderRadius: "8px",
+                        padding: "10px 14px",
+                        marginBottom: "14px",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: "10px",
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px",
+                          color: "#92400e",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        Already booked
+                      </p>
+                      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "4px" }}>
+                        {bookedSlots.map((s) => (
+                          <li
+                            key={s.booking_id}
+                            style={{ fontSize: "12px", color: "#78350f" }}
+                          >
+                            {new Date(s.start_time).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                            {" → "}
+                            {new Date(s.end_time).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   {hours > 0 && (
                     <div
