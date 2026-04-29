@@ -158,6 +158,48 @@ cs-320-team-7/
 
 ---
 
+## Database Setup (Supabase)
+
+Parkly uses **Supabase** (hosted PostgreSQL) as its database. The Express backend holds the single shared Supabase client — the Next.js frontend never talks to Supabase directly; it only calls the Express API on port 3001.
+
+### Connection
+
+The client is initialized once in `backend/src/server.js` and shared across all route handlers via `app.set('supabase', ...)`:
+
+```js
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+app.set('supabase', supabase);
+```
+
+`SUPABASE_URL` and `SUPABASE_KEY` (the **service-role** secret key, not the anon key) must be set in `backend/.env`. Contact a team member for the real values — they are not committed to Git.
+
+### Tables
+
+| Table | Purpose |
+|---|---|
+| `users` | Registered accounts (username, email, hashed password, role) |
+| `parking_spots` | Spot listings created by providers (address, price, availability) |
+| `bookings` | Reservations linking a driver to a spot with date/time range |
+| `reviews` | Post-booking ratings and comments left by drivers |
+| `notifications` | In-app notifications sent to users (booking updates, confirmations) |
+| `service_requests` | Support tickets / help requests submitted by users |
+| `jwt_blacklist` | Invalidated JWT tokens (populated on logout for secure token revocation) |
+
+> All tables must exist in your Supabase project before running the app. Ask a team member for the SQL migration script or access to the shared project.
+
+### Row-Level Security (RLS)
+
+The backend authenticates with the **service-role key**, which bypasses Supabase RLS entirely. All access control is enforced in the Express route handlers and the `verifyToken` middleware (`backend/src/utils/verifyToken.js`), not at the database layer.
+
+### Auth Flow
+
+1. `POST /api/register` — creates a row in `users` with a bcrypt-hashed password.
+2. `POST /api/login` — verifies credentials, returns a signed JWT.
+3. Protected routes use `verifyToken` middleware, which validates the JWT and checks that it has not been added to `jwt_blacklist`.
+4. `POST /api/logout` — inserts the current token into `jwt_blacklist`, making it permanently invalid.
+
+---
+
 ## Resetting Dependencies
 
 If you run into dependency issues:
